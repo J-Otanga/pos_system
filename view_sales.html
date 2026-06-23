@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Sales Report</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Status badge styling for clean auditing */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-cash {
+            background-color: #ecfdf5;
+            color: #047857;
+        }
+        .badge-mpesa {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="topbar">
+        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
+        <div>👤 Welcome, Helen</div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html">📊 Dashboard</a>
+            <a href="add_product.html">➕ Add Product</a>
+            <a href="restock_product.html">📦 Restock Product</a>
+            <a href="index.html">🛒 Record Sale</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html" class="active">📄 View Sales</a>
+            <a href="debts.html">⏰ Outstanding Debts</a>
+            <a href="low_stock.html">⚠️ Low Stock</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>📄 Sales History Report</h2>
+                <p>A complete master ledger of all direct sales and debt collections recorded in the system.</p>
+            </div>
+
+            <div class="content-container" style="max-width: 1000px;">
+                
+                <div style="display: flex; gap: 20px; margin-bottom: 25px;">
+                    <div class="card" style="flex: 1; margin-bottom: 0; background-color: #f9fafb;">
+                        <h4 style="color: var(--text-muted); margin-bottom: 5px; font-size: 0.85rem; text-transform: uppercase;">Total Cash in Drawer</h4>
+                        <div id="totalCashLog" style="font-size: 1.8rem; font-weight: bold; color: #047857;">0 Ksh</div>
+                    </div>
+                    <div class="card" style="flex: 1; margin-bottom: 0; background-color: #f9fafb;">
+                        <h4 style="color: var(--text-muted); margin-bottom: 5px; font-size: 0.85rem; text-transform: uppercase;">Total M-Pesa Mobile Money</h4>
+                        <div id="totalMpesaLog" style="font-size: 1.8rem; font-weight: bold; color: #1d4ed8;">0 Ksh</div>
+                    </div>
+                    <div class="card" style="flex: 1; margin-bottom: 0; background: linear-gradient(135deg, #e0f2fe, #bae6fd); border-color: #7dd3fc;">
+                        <h4 style="color: #0369a1; margin-bottom: 5px; font-size: 0.85rem; text-transform: uppercase;">Cumulative Revenue</h4>
+                        <div id="totalCombinedLog" style="font-size: 1.8rem; font-weight: bold; color: #0369a1;">0 Ksh</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>📜 Transaction Stream</h3>
+                        <button class="btn btn-secondary" id="clearSalesBtn" style="padding: 6px 12px; font-size: 0.8rem; background-color: #fee2e2; border-color: #fca5a5; color: #b91c1c;">
+                            🗑️ Reset Master Logs
+                        </button>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description / Item</th>
+                                <th>Payment Channel</th>
+                                <th style="text-align: right;">Amount Collected</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTableBody">
+                            </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const tableBody = document.getElementById('salesTableBody');
+        const cashDisplay = document.getElementById('totalCashLog');
+        const mpesaDisplay = document.getElementById('totalMpesaLog');
+        const combinedDisplay = document.getElementById('totalCombinedLog');
+        const clearBtn = document.getElementById('clearSalesBtn');
+
+        function renderSalesLedger() {
+            // Pull data from browser memory (reverse it so the newest transactions appear at the top)
+            const sales = JSON.parse(localStorage.getItem('beauty_sales')) || [];
+            const reversedSales = [...sales].reverse();
+
+            tableBody.innerHTML = '';
+            
+            let accumulatedCash = 0;
+            let accumulatedMpesa = 0;
+
+            if (reversedSales.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 4px 0;">No sales records found in system memory yet. Go make a checkout!</td></tr>`;
+                cashDisplay.textContent = "0 Ksh";
+                mpesaDisplay.textContent = "0 Ksh";
+                combinedDisplay.textContent = "0 Ksh";
+                return;
+            }
+
+            // Loop through transactions to build rows and calculate cumulative metrics
+            reversedSales.forEach(sale => {
+                
+                // Add up cash channels (including our new debt tags) vs M-Pesa channels
+                if (sale.method === 'cash' || sale.method === 'debt-deposit' || sale.method === 'debt-collection') {
+                    accumulatedCash += sale.amount;
+                } else if (sale.method === 'mpesa') {
+                    accumulatedMpesa += sale.amount;
+                }
+
+                // Dynamic conditional badge matrix block
+                let methodBadge = '';
+                if (sale.method === 'cash') {
+                    methodBadge = `<span class="badge badge-cash">💵 CASH</span>`;
+                } else if (sale.method === 'mpesa') {
+                    methodBadge = `<span class="badge badge-mpesa">📱 M-PESA</span>`;
+                } else if (sale.method === 'debt-deposit') {
+                    methodBadge = `<span class="badge" style="background-color: #fffbeb; color: #b45309; border: 1px solid #fcd34d; font-weight: bold;">🟡 DEBT DEPOSIT</span>`;
+                } else if (sale.method === 'debt-collection') {
+                    methodBadge = `<span class="badge" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-weight: bold;">🟢 DEBT COLLECT</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--text-muted); font-size: 0.9rem;">${sale.date}</td>
+                    <td style="font-weight: 500; color: var(--text-dark);">${sale.description}</td>
+                    <td>${methodBadge}</td>
+                    <td style="text-align: right; font-weight: bold; color: var(--text-dark);">${sale.amount.toLocaleString()} Ksh</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // Update top audit cards
+            cashDisplay.textContent = accumulatedCash.toLocaleString() + " Ksh";
+            mpesaDisplay.textContent = accumulatedMpesa.toLocaleString() + " Ksh";
+            combinedDisplay.textContent = (accumulatedCash + accumulatedMpesa).toLocaleString() + " Ksh";
+        }
+
+        // Master Wipe Button (For admin/testing clean slate states)
+        clearBtn.addEventListener('click', () => {
+            if (confirm("⚠️ Permanent Action!\nAre you absolutely sure you want to clear the entire historical sales log? This cannot be undone.")) {
+                localStorage.removeItem('beauty_sales');
+                renderSalesLedger();
+            }
+        });
+
+        // Initialize table on layout print cycle
+        renderSalesLedger();
+    </script>
+</body>
+</html>

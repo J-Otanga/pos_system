@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Low Stock Report</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="topbar">
+        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
+        <div>👤 Welcome, Helen</div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html">📊 Dashboard</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+            <a href="add_product.html">➕ Add Product</a>
+            <a href="restock_product.html">🔄 Restock Product</a>
+            <a href="index.html">🛒 Record Sale</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html">📄 View Sales</a>
+            <a href="debts.html">⏰ Outstanding Debts</a>
+            <a href="low_stock.html" class="active">⚠️ Low Stock</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>⚠️ Low Stock Reorder List</h2>
+                <p>The following items have dropped below their designated alert threshold. Use this as your wholesale market shopping list.</p>
+            </div>
+
+            <div class="content-container">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>🛒 Urgent Wholesale Shopping List</h3>
+                        <button onclick="window.print()" class="btn btn-secondary" style="margin-bottom: 0; padding: 6px 12px; font-size: 0.85rem;">🖨️ Print List</button>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product Item</th>
+                                    <th>Category</th>
+                                    <th>Alert Level</th>
+                                    <th style="background-color: #fee2e2; color: #991b1b;">Current Stock</th>
+                                    <th>Status Badge</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lowStockTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function renderLowStockReport() {
+            const inventory = JSON.parse(localStorage.getItem('beauty_inventory')) || [];
+            const tableBody = document.getElementById('lowStockTableBody');
+            
+            tableBody.innerHTML = '';
+
+            // Filter items matching low stock criteria
+            const lowStockItems = inventory.filter(product => product.stock <= product.alertLevel);
+
+            if (lowStockItems.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #047857; background-color: #ecfdf5; padding: 40px; font-weight: 500;">
+                            🎉 Fantastic news! All stock levels are completely healthy. Nothing needs restocking right now.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            lowStockItems.forEach(product => {
+                const tr = document.createElement('tr');
+                
+                // Determine custom badge styling based on whether it is critical out of stock or just low
+                let statusBadge = '';
+                if (product.stock === 0) {
+                    statusBadge = `<span style="background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">🚫 Out of Stock</span>`;
+                } else {
+                    statusBadge = `<span style="background-color: #f59e0b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">⚠️ Low Stock</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td>
+                        <strong style="color: var(--text-dark); display: block;">${product.name}</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">${product.brand}</span>
+                    </td>
+                    <td><span style="font-size: 0.85rem; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${product.category}</span></td>
+                    <td style="color: var(--text-muted); font-weight: 500;">${product.alertLevel} units</td>
+                    <td style="font-weight: bold; color: #b91c1c; background-color: #fef2f2;">${product.stock} left</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <a href="restock_product.html" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.8rem; text-decoration: none; display: inline-block;">🔄 Restock</a>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Initialize display execution
+        renderLowStockReport();
+    </script>
+</body>
+</html>

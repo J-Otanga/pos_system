@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Outstanding Debts</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="topbar">
+        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
+        <div>👤 Welcome, Helen</div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html">📊 Dashboard</a>
+            <a href="add_product.html">➕ Add Product</a>
+            <a href="restock_product.html">📦 Restock Product</a>
+            <a href="index.html">🛒 Record Sale</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html">📄 View Sales</a>
+            <a href="debts.html" class="active">⏰ Outstanding Debts</a>
+            <a href="low_stock.html">⚠️ Low Stock</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>⏰ Outstanding Debts Ledger</h2>
+                <p>Track partial payments, view remaining balances, and clear customer accounts.</p>
+            </div>
+
+            <div class="content-container" style="max-width: 1000px;">
+                <div class="card" style="margin-bottom: 25px; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fcd34d;">
+                    <h3 style="color: #92400e; margin-bottom: 5px;">💰 Total Uncollected Shop Balance</h3>
+                    <div id="totalDebtSumDisplay" style="font-size: 2rem; font-weight: bold; color: #b45309;">0 Ksh</div>
+                </div>
+
+                <div class="card" style="overflow-x: auto;">
+                    <h3>👥 Active Debtor Accounts</h3>
+                    <table style="min-width: 800px;">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Phone</th>
+                                <th>Item</th>
+                                <th>Initial Debt</th>
+                                <th>Paid So Far</th>
+                                <th>Remaining Balance</th>
+                                <th>Log Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="debtsTableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const tableBody = document.getElementById('debtsTableBody');
+        const totalSumDisplay = document.getElementById('totalDebtSumDisplay');
+
+        // Render data rows from localStorage journal
+        function renderDebtsLedger() {
+            let activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
+            let needsSave = false;
+
+            // Auto-upgrade older data formats to support partial payments
+            activeDebts = activeDebts.map(debt => {
+                if (debt.amountPaid === undefined || debt.initialDebt === undefined) {
+                    debt.initialDebt = debt.totalOwed;
+                    debt.amountPaid = 0;
+                    needsSave = true;
+                }
+                return debt;
+            });
+            
+            // Save if we just upgraded any old records
+            if (needsSave) {
+                localStorage.setItem('beauty_debts', JSON.stringify(activeDebts));
+            }
+            
+            tableBody.innerHTML = '';
+            let combinedSumTotal = 0;
+
+            if (activeDebts.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">🎉 Great news! No active customer debts on record.</td></tr>`;
+                totalSumDisplay.textContent = "0 Ksh";
+                return;
+            }
+
+            activeDebts.forEach(debt => {
+                combinedSumTotal += debt.totalOwed;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 600; color: var(--text-dark);">${debt.customerName}</td>
+                    <td style="font-size: 0.9rem;">${debt.customerPhone}</td>
+                    <td><span style="font-size: 0.85rem; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${debt.productPurchased}</span></td>
+                    <td style="color: var(--text-muted);">${debt.initialDebt.toLocaleString()} Ksh</td>
+                    <td style="color: #10b981; font-weight: 500;">${debt.amountPaid.toLocaleString()} Ksh</td>
+                    <td style="color: #ef4444; font-weight: bold; font-size: 1.1rem;">${debt.totalOwed.toLocaleString()} Ksh</td>
+                    <td>
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <input type="number" id="pay_input_${debt.id}" placeholder="Ksh" min="1" max="${debt.totalOwed}" class="form-control" style="width: 80px; padding: 5px; margin-bottom: 0;">
+                            <button class="btn btn-primary" onclick="processPartialPayment('${debt.id}')" style="padding: 6px 10px; font-size: 0.8rem;">
+                                Pay
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearCustomerAccount('${debt.id}')" style="padding: 6px 10px; font-size: 0.8rem; background-color: #10b981; border-color: #10b981; color: white;" title="Clear Full Remaining Balance">
+                                ✅ All
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            totalSumDisplay.textContent = combinedSumTotal.toLocaleString() + " Ksh";
+        }
+
+        // Logic for Partial Payments
+        window.processPartialPayment = function(debtId) {
+            let activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
+            const debtIndex = activeDebts.findIndex(d => d.id === debtId);
+            
+            if (debtIndex !== -1) {
+                const inputField = document.getElementById(`pay_input_${debtId}`);
+                const paymentAmount = parseFloat(inputField.value);
+                const debt = activeDebts[debtIndex];
+                
+                if (!paymentAmount || paymentAmount <= 0) {
+                    alert("⚠️ Please enter a valid payment amount.");
+                    return;
+                }
+
+                // LOG COLLECTION REVENUE: Record cash entry log parameters before adjusting balance states
+                const currentSales = JSON.parse(localStorage.getItem('beauty_sales')) || [];
+                currentSales.push({
+                    id: "s_" + Date.now(),
+                    description: `Debt Payment: ${debt.customerName}`,
+                    amount: paymentAmount,
+                    method: "debt-collection", // Explicit ledger assignment tag
+                    date: new Date().toLocaleDateString()
+                });
+                localStorage.setItem('beauty_sales', JSON.stringify(currentSales));
+
+                if (paymentAmount >= debt.totalOwed) {
+                    activeDebts.splice(debtIndex, 1);
+                } else {
+                    debt.amountPaid += paymentAmount;
+                    debt.totalOwed -= paymentAmount;
+                }
+                
+                localStorage.setItem('beauty_debts', JSON.stringify(activeDebts));
+                alert(`✅ Payment Verified!\nRecorded ${paymentAmount.toLocaleString()} Ksh collection for ${debt.customerName}.`);
+                renderDebtsLedger();
+            }
+        };
+
+        window.clearCustomerAccount = function(debtId) {
+            let activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
+            const debtIndex = activeDebts.findIndex(d => d.id === debtId);
+            
+            if (debtIndex !== -1) {
+                const debt = activeDebts[debtIndex];
+                if (confirm(`Confirm Full Payment: Has "${debt.customerName}" cleared their entire remaining balance of ${debt.totalOwed.toLocaleString()} Ksh?`)) {
+                    
+                    // LOG FULL REVENUE RECORD
+                    const currentSales = JSON.parse(localStorage.getItem('beauty_sales')) || [];
+                    currentSales.push({
+                        id: "s_" + Date.now(),
+                        description: `Debt Cleared: ${debt.customerName}`,
+                        amount: debt.totalOwed,
+                        method: "debt-collection", // Explicit ledger assignment tag
+                        date: new Date().toLocaleDateString()
+                    });
+                    localStorage.setItem('beauty_sales', JSON.stringify(currentSales));
+
+                    activeDebts.splice(debtIndex, 1);
+                    localStorage.setItem('beauty_debts', JSON.stringify(activeDebts));
+                    renderDebtsLedger();
+                }
+            }
+        };
+
+        // Initialize table
+        renderDebtsLedger();
+    </script>
+</body>
+</html>

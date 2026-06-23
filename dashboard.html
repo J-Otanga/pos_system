@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Small helper class for empty or healthy alert states */
+        .healthy-state {
+            color: #047857;
+            background-color: #ecfdf5;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .huge-number {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="topbar">
+        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
+        <div>👤 Welcome, Helen</div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html" class="active">📊 Dashboard</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+            <a href="add_product.html">➕ Add Product</a>
+            <a href="restock_product.html">🔄 Restock Product</a>
+            <a href="index.html">🛒 Record Sale</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html">📄 View Sales</a>
+            <a href="debts.html">⏰ Outstanding Debts</a>
+            <a href="low_stock.html">⚠️ Low Stock</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>📊 Business Dashboard</h2>
+                <p>Real-time overview of today's revenue, outstanding balances, and inventory alerts.</p>
+            </div>
+
+            <div class="dashboard-metrics-grid">
+                
+                <div class="card">
+                    <h3>📅 Today's Real Summary</h3>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Cash Collected</span>
+                        <span style="color: #10b981; font-weight: bold;">0 Ksh</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>M-Pesa Revenue</span>
+                        <span style="color: #3b82f6; font-weight: bold;">0 Ksh</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; background: #f9fafb; padding: 12px; margin-top: 15px; border-radius: 4px;">
+                        <span>Total Till Value</span>
+                        <span style="color: #3b82f6; font-size: 1.1rem;">0 Ksh</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>👤 Outstanding Debts</h3>
+                    <div class="huge-number" id="debtCountDisplay">0</div>
+                    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 25px;">Customers currently owe the shop money.</p>
+                    <a href="debts.html" style="color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 500;">Manage Active Debts →</a>
+                </div>
+
+                <div class="card">
+                    <h3>⚠️ Low Stock Alerts</h3>
+                    <div id="lowStockContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                        </div>
+                    <a href="low_stock.html" style="display: block; margin-top: auto; color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 500;">Open Master Inventory →</a>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+function calculateDashboardMetrics() {
+    // 1. Calculate Active Debts count
+    const activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
+    document.getElementById('debtCountDisplay').textContent = activeDebts.length;
+
+    // 2. Calculate Low Stock Items list
+    const inventory = JSON.parse(localStorage.getItem('beauty_inventory')) || [];
+    const lowStockContainer = document.getElementById('lowStockContainer');
+    const lowStockItems = inventory.filter(product => product.stock <= product.alertLevel);
+    
+    lowStockContainer.innerHTML = '';
+    if (lowStockItems.length === 0) {
+        lowStockContainer.innerHTML = `<div class="healthy-state">✅ All stock levels healthy!</div>`;
+    } else {
+        lowStockItems.forEach(product => {
+            const itemRow = document.createElement('div');
+            itemRow.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #e5e7eb;";
+            itemRow.innerHTML = `
+                <span>${product.name} <small style="color: #6b7280;">(${product.brand})</small></span>
+                <span style="color: #ef4444; font-weight: bold; background-color: #fee2e2; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;">
+                    ${product.stock} left
+                </span>
+            `;
+            lowStockContainer.appendChild(itemRow);
+        });
+    }
+
+    // 3. DYNAMIC REVENUE CALCULATION ENGINE
+    const salesLedger = JSON.parse(localStorage.getItem('beauty_sales')) || [];
+    const todayString = new Date().toLocaleDateString();
+
+    let todayCashSum = 0;
+    let todayMpesaSum = 0;
+
+    // Filter and aggregate records matching exactly today's operational date string
+    salesLedger.forEach(sale => {
+        if (sale.date === todayString) {
+            // Catch cash, initial debt deposits, and later debt collections
+            if (sale.method === 'cash' || sale.method === 'debt-deposit' || sale.method === 'debt-collection') {
+                todayCashSum += sale.amount;
+            } else if (sale.method === 'mpesa') {
+                todayMpesaSum += sale.amount;
+            }
+        }
+    });
+
+    const totalCalculatedDayRevenue = todayCashSum + todayMpesaSum;
+
+    // Direct DOM injection replacement to wipe out hardcoded mock numbers
+    const summaryCard = document.querySelector('.dashboard-metrics-grid .card');
+    summaryCard.innerHTML = `
+        <h3>📅 Today's Real Summary</h3>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>Cash Collected</span>
+            <span style="color: #10b981; font-weight: bold;">${todayCashSum.toLocaleString()} Ksh</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>M-Pesa Revenue</span>
+            <span style="color: #3b82f6; font-weight: bold;">${todayMpesaSum.toLocaleString()} Ksh</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; background: #f9fafb; padding: 12px; margin-top: 15px; border-radius: 4px;">
+            <span>Total Till Value</span>
+            <span style="color: #3b82f6; font-size: 1.1rem;">${totalCalculatedDayRevenue.toLocaleString()} Ksh</span>
+        </div>
+    `;
+}
+
+// Execute calculation layout mapping on initiation paint cycles
+calculateDashboardMetrics();
+    </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Add Product</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="topbar">
+        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
+        <div>👤 Welcome, Helen</div>
+    </header>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html">📊 Dashboard</a>
+            <a href="add_product.html" class="active">➕ Add Product</a>
+            <a href="restock_product.html">📦 Restock Product</a>
+            <a href="index.html">🛒 Record Sale</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html">📄 View Sales</a>
+            <a href="debts.html">⏰ Outstanding Debts</a>
+            <a href="low_stock.html">⚠️ Low Stock</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>➕ Add New Product</h2>
+                <p>Add fresh items to your inventory system so they can be selected on other screens.</p>
+            </div>
+
+            <div class="content-container">
+                <section class="card">
+                    <h3>Product Details</h3>
+                    
+                    <form id="addProductForm">
+                        <div class="form-grid">
+                            <div>
+                                <div class="form-group">
+                                    <label for="prodName">Product Name</label>
+                                    <input type="text" id="prodName" class="form-control" placeholder="e.g., Luxury Matte Lipstick" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prodBrand">Brand</label>
+                                    <select id="prodBrand" class="form-control">
+                                        <option value="Cinta">Cinta</option>
+                                        <option value="Jaycee">Jaycee</option>
+                                        <option value="JK Cosmetics">JK Cosmetics</option>
+                                        <option value="Other">Other / Local Brand</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="customBrandGroup" style="display: none;">
+                                    <label for="prodCustomBrand">Specify Brand Name</label>
+                                    <input type="text" id="prodCustomBrand" class="form-control" placeholder="e.g., Suzie Beauty">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prodCategory">Category</label>
+                                    <select id="prodCategory" class="form-control">
+                                        <option value="Cosmetics">Cosmetics & Makeup</option>
+                                        <option value="Hair Care">Hair Care</option>
+                                        <option value="Extensions">Extensions & Braids</option>
+                                        <option value="Nails">Nails</option>
+                                        <option value="Skin Care">Skin & Body Care</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="form-group">
+                                    <label for="prodBuyingPrice">Buying Price (Cost per Unit in Ksh)</label>
+                                    <input type="number" id="prodBuyingPrice" class="form-control" placeholder="e.g., 600" min="0" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prodSellingPrice">Selling Price (Retail in Ksh)</label>
+                                    <input type="number" id="prodSellingPrice" class="form-control" placeholder="e.g., 1000" min="0" required>
+                                </div>
+
+                                <div class="form-row" style="display: flex; gap: 15px;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label for="prodInitialStock">Initial Stock</label>
+                                        <input type="number" id="prodInitialStock" class="form-control" value="10" min="0" required>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label for="prodAlertLevel">Alert Level</label>
+                                        <input type="number" id="prodAlertLevel" class="form-control" value="3" min="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="actions" style="margin-top: 30px;">
+                            <button type="button" class="btn btn-secondary" id="clearFormBtn">Clear Form</button>
+                            <button type="submit" class="btn btn-primary">Save Product to Inventory</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('addProductForm');
+        const clearBtn = document.getElementById('clearFormBtn');
+        const brandSelect = document.getElementById('prodBrand');
+        const customBrandGroup = document.getElementById('customBrandGroup');
+        const customBrandInput = document.getElementById('prodCustomBrand');
+
+        // Initial default items data database helper
+        const defaultProducts = [
+            { id: "p1", name: "Marini Naturals Shampoo", brand: "Other", category: "Hair Care", buyingPrice: 1500, sellingPrice: 2000, stock: 15, alertLevel: 5 },
+            { id: "p2", name: "Darling Braids", brand: "Other", category: "Extensions", buyingPrice: 600, sellingPrice: 850, stock: 15, alertLevel: 3 },
+            { id: "p3", name: "Nice & Lovely Lotion", brand: "Other", category: "Skin Care", buyingPrice: 900, sellingPrice: 1200, stock: 15, alertLevel: 3 }
+        ];
+
+        // Ensure database exists on load
+        function getInventory() {
+            const stored = localStorage.getItem('beauty_inventory');
+            if (!stored) {
+                localStorage.setItem('beauty_inventory', JSON.stringify(defaultProducts));
+                return defaultProducts;
+            }
+            return JSON.parse(stored);
+        }
+
+        brandSelect.addEventListener('change', () => {
+            if (brandSelect.value === 'Other') {
+                customBrandGroup.style.display = 'flex';
+                customBrandInput.required = true;
+            } else {
+                customBrandGroup.style.display = 'none';
+                customBrandInput.required = false;
+                customBrandInput.value = '';
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            let finalBrand = brandSelect.value;
+            if (finalBrand === 'Other') finalBrand = customBrandInput.value;
+
+            const newProduct = {
+                id: "p_" + Date.now(), // Creates a unique ID string
+                name: document.getElementById('prodName').value,
+                brand: finalBrand,
+                category: document.getElementById('prodCategory').value,
+                buyingPrice: parseFloat(document.getElementById('prodBuyingPrice').value),
+                sellingPrice: parseFloat(document.getElementById('prodSellingPrice').value),
+                stock: parseInt(document.getElementById('prodInitialStock').value),
+                alertLevel: parseInt(document.getElementById('prodAlertLevel').value)
+            };
+
+            // Pull database array, append data, and resave back
+            const currentInventory = getInventory();
+            currentInventory.push(newProduct);
+            localStorage.setItem('beauty_inventory', JSON.stringify(currentInventory));
+
+            alert(`🎉 Success! ${newProduct.brand} - "${newProduct.name}" has been registered into system memory.`);
+            
+            form.reset();
+            customBrandGroup.style.display = 'none';
+            customBrandInput.required = false;
+        });
+
+        clearBtn.addEventListener('click', () => {
+            form.reset();
+            customBrandGroup.style.display = 'none';
+            customBrandInput.required = false;
+        });
+
+        // Instantiate database on script evaluation
+        getInventory();
+    </script>
+</body>
+</html>

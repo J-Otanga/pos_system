@@ -1,0 +1,316 @@
+/* System Fonts & Reset */
+:root {
+    --primary-blue: #2563eb;
+    --sidebar-dark: #1e293b;
+    --bg-light: #f3f4f6;
+    --text-dark: #111827;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+    --success-green: #22c55e;
+    --warning-red: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Top Navigation Bar */
+.topbar {
+    background-color: var(--primary-blue);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.topbar h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* Layout Setup */
+.app-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-dark);
+    color: #9ca3af;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.sidebar-category {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 20px 20px 10px;
+    color: #6b7280;
+}
+
+.sidebar a {
+    color: #d1d5db;
+    text-decoration: none;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.sidebar a:hover, .sidebar a.active {
+    background-color: #334155;
+    color: white;
+    border-left: 4px solid var(--primary-blue);
+}
+
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+}
+
+.header-title {
+    margin-bottom: 20px;
+}
+
+.header-title h2 {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-title p {
+    color: var(--text-muted);
+    margin-top: 5px;
+    font-size: 0.9rem;
+}
+
+/* Grid Layout */
+/* Replace the old .dashboard-grid block with this: */
+.content-container {
+    max-width: 900px; /* Keeps the form perfectly sized and readable */
+    margin: 0 auto;   /* Centers the workstation layout nicely */
+}
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+/* Form Elements */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background-color: #f9fafb;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    background-color: white;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 5px;
+}
+
+/* Payment Buttons */
+.payment-methods {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-payment {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    background: #f3f4f6;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-payment.active[data-method="cash"] {
+    background-color: var(--success-green);
+    color: white;
+    border-color: var(--success-green);
+}
+
+.btn-payment.active[data-method="mpesa"] {
+    background-color: #00A859; /* Safaricom Green */
+    color: white;
+    border-color: #00A859;
+}
+
+.btn-payment.active[data-method="debt"] {
+    background-color: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+/* Alerts & Info Boxes */
+.info-box {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 15px;
+    margin: 20px 0;
+    font-size: 0.9rem;
+    color: #1e3a8a;
+}
+
+/* Action Buttons */
+.actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.btn-primary {
+    background-color: var(--primary-blue);
+    color: white;
+}
+
+/* Tables & Lists */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+th, td {
+    text-align: left;
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    color: var(--text-muted);
+    font-weight: 500;
+    background-color: #f9fafb;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.badge-cash { background-color: #dcfce7; color: #166534; }
+.badge-debt { background-color: #fef3c7; color: #92400e; }
+
+.right-panel-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.right-panel-item:last-child {
+    border-bottom: none;
+}
+
+.text-bold { font-weight: 600; }
+.text-green { color: var(--success-green); }
+.text-blue { color: var(--primary-blue); }
+.text-red { color: var(--warning-red); }
+
+.huge-number {
+    font-size: 2rem;
+    color: #ef4444;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Dashboard Specific Layout Styles */
+.dashboard-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 10px;
+}
+
+/* Enhancing card spacing on the dashboard */
+.dashboard-metrics-grid .card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 200px;
+    margin-bottom: 0; /* Override bottom margin to let grid spacing manage it */
+}
