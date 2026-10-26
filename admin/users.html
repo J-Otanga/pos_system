@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - User & Staff Management</title>
+
+    <!-- 1. Admin Security Guard (Runs immediately before page renders) -->
+    <script src="admin_guard.js"></script>
+    
+    <!-- 2. Stylesheets -->
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="topbar admin-topbar">
+        <h1>Beauty Store POS — Admin Portal</h1>
+        <div class="user-profile">
+            <span class="role-badge">Role: Admin</span>
+            <a href="../debts.html" class="btn-switch-admin" style="margin-left: 12px; background: #4f46e5; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">🛒 Open Cashier POS</a>
+                    <button type="button" onclick="logoutUser()" class="btn-logout">
+            🚪 Logout
+        </button>
+
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+    <div class="sidebar-category">Main</div>
+    <a href="../dashboard.html" class="admin-only">📊 Dashboard</a>
+    <a href="../record_sale.html">🛒 Record Sale</a>
+    <a href="../inventory.html">📦 Master Inventory</a>
+    <a href="../add_product.html" class="admin-only">➕ Add Product</a>
+    <a href="../restock_product.html" class="admin-only">🔄 Restock Product</a>
+
+    <div class="sidebar-category">Reports</div>
+    <a href="../view_sales.html">📄 View Sales</a>
+    <a href="../debts.html">⏰ Outstanding Debts</a>
+    <a href="../low_stock.html">⚠️ Low Stock</a>
+    <a href="users.html" class="admin-only">👥 User Management</a>
+    <a href="../admin/reports.html" class="admin-only">📈 P&L Reports</a>
+</aside>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="content-container">
+                
+                <!-- Page Header -->
+                <div class="header-title">
+                    <h2><span>👥</span> User & Staff Management</h2>
+                    <p>Create staff accounts, assign roles (Admin / Cashier), and manage login credentials.</p>
+                </div>
+
+                <!-- User Metrics Summary -->
+                <div class="dashboard-metrics-grid">
+                    <div class="card card-metric-revenue">
+                        <span class="metric-label-revenue">Total Users</span>
+                        <div class="metric-value-revenue" id="metric-total-users">0</div>
+                        <span class="help-text">Registered staff accounts</span>
+                    </div>
+
+                    <div class="card card-metric-cash">
+                        <span class="metric-label">Active Cashiers</span>
+                        <div class="metric-value-cash" id="metric-active-cashiers">0</div>
+                        <span class="help-text">Staff authorized for POS terminal</span>
+                    </div>
+
+                    <div class="card debt-summary-card">
+                        <span class="metric-label" style="color: var(--amber-text);">Administrators</span>
+                        <div class="huge-number" id="metric-admin-count">0</div>
+                        <span class="help-text" style="color: var(--amber-text);">Full system access</span>
+                    </div>
+                </div>
+
+                <!-- Add / Edit User Form Card -->
+                <div class="card">
+                    <h3><span id="form-title-icon">➕</span> <span id="form-title">Add New Staff Account</span></h3>
+                    
+                    <form id="user-form">
+                        <!-- Row 1: Full Name, Username, Email -->
+                        <div class="form-grid-3">
+                            <div class="form-group">
+                                <label for="user-fullname">Full Name *</label>
+                                <input type="text" id="user-fullname" class="form-control" placeholder="e.g., Jane Doe" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-username">Username *</label>
+                                <input type="text" id="user-username" class="form-control" placeholder="e.g., janedoe" required autocomplete="off">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-email">Email Address *</label>
+                                <input type="email" id="user-email" class="form-control" placeholder="jane@beautystore.com" required>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Password, Role, Status -->
+                        <div class="form-grid-3">
+                            <div class="form-group">
+                                <label for="user-password">Password <span id="password-help-note" style="font-size:0.75rem; color:#6b7280;">(Required for new user)</span></label>
+                                <input type="password" id="user-password" class="form-control" placeholder="••••••••" autocomplete="new-password">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-role">Assigned Role *</label>
+                                <select id="user-role" class="form-control" required>
+                                    <option value="cashier" selected>Cashier (POS & Sales only)</option>
+                                    <option value="admin">Admin (Full System & Inventory Access)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="user-status">Account Status *</label>
+                                <select id="user-status" class="form-control" required>
+                                    <option value="active" selected>Active</option>
+                                    <option value="inactive">Inactive (Blocked from login)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button type="submit" class="btn btn-primary" id="btn-save-user">Save Account</button>
+                            <button type="button" class="btn btn-secondary" id="btn-clear-user-form">Clear Form</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Users Directory Table -->
+                <div class="card table-card">
+                    <h3><span>📋</span> Staff Account Directory</h3>
+                    
+                    <!-- Search & Filter Controls -->
+                    <div class="filter-bar">
+                        <div class="filter-controls">
+                            <input type="text" id="search-users" class="form-control input-search" placeholder="Search by name, username, or email...">
+                            <select id="filter-user-role" class="form-control select-channel">
+                                <option value="all">All Roles</option>
+                                <option value="admin">Admins</option>
+                                <option value="cashier">Cashiers</option>
+                            </select>
+                            <select id="filter-user-status" class="form-control select-channel">
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name / Username</th>
+                                <th>Email</th>
+                                <th class="text-center">Role</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Created Date</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- Dynamically populated via users.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript Controller -->
+    <script src="users.js"></script>
+</body>
+</html>

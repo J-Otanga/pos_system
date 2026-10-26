@@ -3,115 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beauty Shop System - Low Stock Report</title>
+    <title>Beauty Shop System - Low Stock Reorder List</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Card Header Flex Layout Fix */
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-print {
+            width: auto !important;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-print:hover {
+            background-color: #e5e7eb;
+            color: #111827;
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            letter-spacing: 0.5px;
+        }
+        .badge-danger {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+        .badge-warning {
+            background-color: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fcd34d;
+        }
+
+        /* Restock Action Button */
+        .btn-restock-sm {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            background-color: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-restock-sm:hover {
+            background-color: #dbeafe;
+        }
+
+        /* Print Mode Styling */
+        @media print {
+            .topbar, .sidebar, .header-title p, .btn-print, .table-controls, .btn-restock-sm {
+                display: none !important;
+            }
+            .app-container {
+                display: block !important;
+            }
+            .main-content {
+                padding: 0 !important;
+            }
+            .card {
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
-
-    <header class="topbar">
-        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
-        <div>👤 Welcome, Helen</div>
-    </header>
-
+<header class="topbar">
+    <h1>Beauty Store POS</h1>
+    <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+        <span id="nav-user-badge" class="role-badge">Loading...</span>
+        <button type="button" onclick="logoutUser()" class="btn-logout">
+            🚪 Logout
+        </button>
+    </div>
+</header>
     <div class="app-container">
-        <aside class="sidebar">
-            <div class="sidebar-category">Main</div>
-            <a href="dashboard.html">📊 Dashboard</a>
-            <a href="inventory.html">📦 Master Inventory</a>
-            <a href="add_product.html">➕ Add Product</a>
-            <a href="restock_product.html">🔄 Restock Product</a>
-            <a href="index.html">🛒 Record Sale</a>
+       <aside class="sidebar">
+    <div class="sidebar-category">Main</div>
+    <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
 
-            <div class="sidebar-category">Reports</div>
-            <a href="view_sales.html">📄 View Sales</a>
-            <a href="debts.html">⏰ Outstanding Debts</a>
-            <a href="low_stock.html" class="active">⚠️ Low Stock</a>
-        </aside>
+    <a href="record_sale.html">🛒 Record Sale</a>
+    <a href="inventory.html">📦 Master Inventory</a>
+    <a href="add_product.html" class="admin-only">➕ Add Product</a>
+    <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
+
+    <div class="sidebar-category">Reports</div>
+    <a href="view_sales.html">📄 View Sales</a>
+    <a href="debts.html">⏰ Outstanding Debts</a>
+    <a href="low_stock.html">⚠️ Low Stock</a>
+    <a href="admin/users.html" class="admin-only">👥 User Management</a>
+    <a href="admin/reports.html" class="admin-only">📈 P&L Reports</a>
+</aside>
 
         <main class="main-content">
             <div class="header-title">
                 <h2>⚠️ Low Stock Reorder List</h2>
-                <p>The following items have dropped below their designated alert threshold. Use this as your wholesale market shopping list.</p>
+                <p>The following items have dropped down to or below their designated alert threshold. Use this as your wholesale market shopping list.</p>
             </div>
 
             <div class="content-container">
+                
                 <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3>🛒 Urgent Wholesale Shopping List</h3>
-                        <button onclick="window.print()" class="btn btn-secondary" style="margin-bottom: 0; padding: 6px 12px; font-size: 0.85rem;">🖨️ Print List</button>
+                    <div class="card-header-flex">
+                        <h3 style="margin: 0;">🛒 Urgent Wholesale Shopping List</h3>
+                        <button class="btn-print" onclick="window.print()">
+                            🖨️ Print Shopping List
+                        </button>
                     </div>
 
-                    <div style="overflow-x: auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Product Item</th>
-                                    <th>Category</th>
-                                    <th>Alert Level</th>
-                                    <th style="background-color: #fee2e2; color: #991b1b;">Current Stock</th>
-                                    <th>Status Badge</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="lowStockTableBody">
-                                </tbody>
-                        </table>
-                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product Item</th>
+                                <th>Category</th>
+                                <th style="text-align: center;">Alert Level</th>
+                                <th style="text-align: center;">Current Stock</th>
+                                <th style="text-align: center;">Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lowStockTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #64748b; padding: 25px 0;">
+                                    Loading inventory status...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+
             </div>
         </main>
     </div>
 
-    <script>
-        function renderLowStockReport() {
-            const inventory = JSON.parse(localStorage.getItem('beauty_inventory')) || [];
-            const tableBody = document.getElementById('lowStockTableBody');
-            
-            tableBody.innerHTML = '';
+<script>
+    const PRODUCTS_API = "/api/products.php";
+    const tableBody = document.getElementById('lowStockTableBody');
 
-            // Filter items matching low stock criteria
-            const lowStockItems = inventory.filter(product => product.stock <= product.alertLevel);
+    // Helper to safely extract array regardless of API response structure
+    function extractArray(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.products)) return data.products;
+        if (data && Array.isArray(data.data)) return data.data;
+        return [];
+    }
 
-            if (lowStockItems.length === 0) {
+    async function fetchLowStockData() {
+        try {
+            const response = await fetch(PRODUCTS_API);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const rawData = await response.json();
+            console.log("Raw Products API Response:", rawData); // Check F12 Developer Console if needed
+
+            const inventory = extractArray(rawData);
+
+            // STATE 1: DATABASE IS COMPLETELY EMPTY
+            if (!inventory || inventory.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #047857; background-color: #ecfdf5; padding: 40px; font-weight: 500;">
-                            🎉 Fantastic news! All stock levels are completely healthy. Nothing needs restocking right now.
+                        <td colspan="6" style="text-align: center; padding: 35px 15px; background-color: #f8fafc;">
+                            <div style="font-size: 1.1rem; font-weight: bold; color: #475569; margin-bottom: 8px;">
+                                📦 No products found in database
+                            </div>
+                            <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">
+                                You have not registered any products yet.
+                            </div>
+                            <a href="add_product.html" style="background: #2563eb; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 0.85rem; display: inline-block;">
+                                + Add First Product
+                            </a>
                         </td>
                     </tr>`;
                 return;
             }
 
-            lowStockItems.forEach(product => {
-                const tr = document.createElement('tr');
-                
-                // Determine custom badge styling based on whether it is critical out of stock or just low
-                let statusBadge = '';
-                if (product.stock === 0) {
-                    statusBadge = `<span style="background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">🚫 Out of Stock</span>`;
-                } else {
-                    statusBadge = `<span style="background-color: #f59e0b; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">⚠️ Low Stock</span>`;
-                }
-
-                tr.innerHTML = `
-                    <td>
-                        <strong style="color: var(--text-dark); display: block;">${product.name}</strong>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">${product.brand}</span>
-                    </td>
-                    <td><span style="font-size: 0.85rem; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${product.category}</span></td>
-                    <td style="color: var(--text-muted); font-weight: 500;">${product.alertLevel} units</td>
-                    <td style="font-weight: bold; color: #b91c1c; background-color: #fef2f2;">${product.stock} left</td>
-                    <td>${statusBadge}</td>
-                    <td>
-                        <a href="restock_product.html" class="btn btn-primary" style="padding: 4px 10px; font-size: 0.8rem; text-decoration: none; display: inline-block;">🔄 Restock</a>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
+            // Filter for items where current stock <= alert level threshold
+            const lowStockItems = inventory.filter(item => {
+                const stock = Number(item.stock ?? item.quantity ?? item.qty ?? item.current_stock ?? 0);
+                const alertLevel = Number(item.alert_level ?? item.alertLevel ?? item.min_stock ?? item.reorder_level ?? 3);
+                return stock <= alertLevel;
             });
-        }
 
-        // Initialize display execution
-        renderLowStockReport();
-    </script>
+            // STATE 2: PRODUCTS EXIST, BUT NONE ARE LOW STOCK
+            if (lowStockItems.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 35px 15px; background-color: #f0fdf4;">
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #15803d; margin-bottom: 5px;">
+                                🎉 Fantastic news!
+                            </div>
+                            <div style="color: #166534; font-size: 0.9rem;">
+                                All ${inventory.length} products in your database have healthy stock levels.
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            // STATE 3: LOW STOCK ITEMS EXIST
+            renderLowStockTable(lowStockItems);
+
+        } catch (err) {
+            console.error("Fetch Low Stock Error:", err);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #ef4444; padding: 25px 0; background-color: #fef2f2;">
+                        ❌ Unable to connect to database server (/api/products.php).
+                    </td>
+                </tr>`;
+        }
+    }
+
+    function renderLowStockTable(items) {
+        tableBody.innerHTML = '';
+
+        items.forEach(item => {
+            const stock = Number(item.stock ?? item.quantity ?? item.qty ?? item.current_stock ?? 0);
+            const alertLevel = Number(item.alert_level ?? item.alertLevel ?? item.min_stock ?? item.reorder_level ?? 3);
+            const productName = item.name || item.product_name || item.title || 'Unknown Item';
+            const category = item.category || item.brand || 'General';
+            const productId = item.id || item.product_id || '';
+
+            let statusBadge = stock === 0 
+                ? `<span class="badge badge-danger">OUT OF STOCK</span>`
+                : `<span class="badge badge-warning">LOW STOCK</span>`;
+
+            const restockUrl = productId ? `restock_product.html?id=${productId}` : 'restock_product.html';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 600; color: #111827;">${productName}</td>
+                <td style="color: #6b7280; font-size: 0.85rem;">${category}</td>
+                <td style="text-align: center; color: #6b7280;">${alertLevel}</td>
+                <td style="text-align: center; font-weight: bold; color: ${stock === 0 ? '#dc2626' : '#d97706'};">
+                    ${stock}
+                </td>
+                <td style="text-align: center;">${statusBadge}</td>
+                <td style="text-align: right;">
+                    <a href="${restockUrl}" class="btn-restock-sm">🔄 Restock</a>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    // Initialize page
+    fetchLowStockData();
+</script>
+<script src="auth_ui.js"></script>
 </body>
 </html>

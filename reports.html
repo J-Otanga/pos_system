@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Reports & Sales Stream</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .stat-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.85rem;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .badge-debt { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .badge-cash { background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+        .badge-mpesa { background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <h1>Beauty Store POS</h1>
+        <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+            <span id="nav-user-badge" class="role-badge">Loading...</span>
+            <button type="button" onclick="logoutUser()" class="btn-logout">🚪 Logout</button>
+        </div>
+    </header>
+    
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
+            <a href="record_sale.html">🛒 Record Sale</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+            <a href="add_product.html" class="admin-only">➕ Add Product</a>
+            <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html">📄 View Sales</a>
+            <a href="debts.html">⏰ Outstanding Debts</a>
+            <a href="low_stock.html">⚠️ Low Stock</a>
+            <a href="admin/users.html" class="admin-only">👥 User Management</a>
+            <a href="reports.html" class="active">📈 P&L Reports</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>📜 Transaction Stream & Financial Reports</h2>
+                <p>Track cash flow, partial deposits, customer debt breakdowns, and real-time revenue ledger.</p>
+            </div>
+
+            <div class="summary-cards">
+                <div class="stat-card">
+                    <h4>Total Cash Collected</h4>
+                    <div class="value" id="statCollected" style="color: #059669;">0 Ksh</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Outstanding Debt</h4>
+                    <div class="value" id="statDebt" style="color: #dc2626;">0 Ksh</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Gross Sales</h4>
+                    <div class="value" id="statTotalSales" style="color: #2563eb;">0 Ksh</div>
+                </div>
+            </div>
+
+            <section class="card">
+                <h3>📜 Transaction Stream</h3>
+                
+                <div class="filter-container">
+                    <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Search description, product, or customer..." style="flex: 2; min-width: 240px;">
+                    <select id="paymentFilter" class="filter-input" style="flex: 1; min-width: 180px;">
+                        <option value="all">All Payment Channels</option>
+                        <option value="cash">💵 Cash Only</option>
+                        <option value="mpesa">📱 M-Pesa Only</option>
+                        <option value="debt">📌 On Credit / Debt</option>
+                    </select>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Description / Item</th>
+                            <th>Payment Channel</th>
+                            <th>Amount Collected & Debt Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTbody">
+                        <tr><td colspan="4" style="text-align: center; color: #6b7280;">Loading transaction stream...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+<script>
+    let rawSalesData = [];
+
+    async function fetchSalesData() {
+        try {
+            const res = await fetch('/api/sales.php');
+            if (!res.ok) throw new Error('Failed to load transaction history');
+            
+            rawSalesData = await res.json();
+            calculateSummaryStats(rawSalesData);
+            filterAndRender();
+        } catch (err) {
+            console.error('Data error:', err);
+            document.getElementById('transactionTbody').innerHTML = 
+                `<tr><td colspan="4" style="text-align: center; color: #dc2626;">Error loading transaction data from backend.</td></tr>`;
+        }
+    }
+
+    function calculateSummaryStats(sales) {
+        let totalCollected = 0;
+        let totalDebt = 0;
+        let totalGross = 0;
+
+        sales.forEach(s => {
+            const total = parseFloat(s.total_amount ?? s.amount ?? 0);
+            const method = (s.method || 'cash').toLowerCase();
+            const paid = s.amount_paid !== undefined && s.amount_paid !== null 
+                ? parseFloat(s.amount_paid) 
+                : (method === 'debt' ? 0 : total);
+
+            const unpaid = total - paid;
+
+            totalCollected += paid;
+            if (unpaid > 0) totalDebt += unpaid;
+            totalGross += total;
+        });
+
+        document.getElementById('statCollected').textContent = totalCollected.toLocaleString() + ' Ksh';
+        document.getElementById('statDebt').textContent = totalDebt.toLocaleString() + ' Ksh';
+        document.getElementById('statTotalSales').textContent = totalGross.toLocaleString() + ' Ksh';
+    }
+
+    function filterAndRender() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        const selectedChannel = document.getElementById('paymentFilter').value;
+        const tbody = document.getElementById('transactionTbody');
+
+        const filtered = rawSalesData.filter(s => {
+            const descMatch = (s.description || '').toLowerCase().includes(searchTerm);
+            const nameMatch = (s.customer_name || '').toLowerCase().includes(searchTerm);
+            const matchesText = descMatch || nameMatch;
+
+            const methodKey = (s.method || 'cash').toLowerCase();
+            const matchesChannel = (selectedChannel === 'all') || (methodKey === selectedChannel);
+
+            return matchesText && matchesChannel;
+        });
+
+        tbody.innerHTML = '';
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #6b7280; padding: 20px;">No matching transactions found.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(s => {
+            const tr = document.createElement('tr');
+            
+            const methodKey = (s.method || 'cash').toLowerCase();
+            const totalAmount = parseFloat(s.total_amount ?? s.amount ?? 0);
+            const amountPaid = s.amount_paid !== undefined && s.amount_paid !== null 
+                ? parseFloat(s.amount_paid) 
+                : (methodKey === 'debt' ? 0 : totalAmount);
+            
+            const unpaidBal = totalAmount - amountPaid;
+
+            // Date formatting
+            const dateStr = s.created_at || s.date || 'N/A';
+
+            // Item Description + Debtor Name
+            let descriptionHtml = `<strong>${s.description || 'Sale Transaction'}</strong>`;
+            if (s.customer_name && s.customer_name.trim() !== '') {
+                descriptionHtml += `<br><small style="color: #b45309; font-weight: 600;">👤 Customer: ${s.customer_name}</small>`;
+            }
+
+            // Payment Badge
+            let badgeClass = 'badge-cash';
+            let badgeLabel = '💵 CASH';
+
+            if (methodKey === 'mpesa') {
+                badgeClass = 'badge-mpesa';
+                badgeLabel = '📱 M-PESA';
+            } else if (methodKey === 'debt' || unpaidBal > 0) {
+                badgeClass = 'badge-debt';
+                badgeLabel = '📌 ON CREDIT';
+            }
+
+            // Amount Collected & Unpaid breakdown
+            let amountHtml = '';
+            if (unpaidBal > 0) {
+                amountHtml = `
+                    <span style="color: #059669; font-weight: 700;">+${amountPaid.toLocaleString()} Ksh</span> 
+                    <small style="color: #6b7280;">(Collected)</small>
+                    <br>
+                    <small style="color: #dc2626; font-weight: 700;">⚠️ Unpaid: ${unpaidBal.toLocaleString()} Ksh</small>
+                `;
+            } else {
+                amountHtml = `<span style="color: #059669; font-weight: 700;">+${totalAmount.toLocaleString()} Ksh</span>`;
+            }
+
+            tr.innerHTML = `
+                <td style="font-size: 0.85rem; color: #4b5563;">${dateStr}</td>
+                <td>${descriptionHtml}</td>
+                <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+                <td>${amountHtml}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Event Listeners
+    document.getElementById('searchInput').addEventListener('input', filterAndRender);
+    document.getElementById('paymentFilter').addEventListener('change', filterAndRender);
+
+    fetchSalesData();
+</script>
+<script src="auth_ui.js"></script>
+</body>
+</html>

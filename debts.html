@@ -7,26 +7,33 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header class="topbar">
-        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
-        <div>👤 Welcome, Helen</div>
-    </header>
-
+<!-- Topbar inside debts.html / dashboard.html -->
+ <header class="topbar">
+    <h1>Beauty Store POS</h1>
+    <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+        <span id="nav-user-badge" class="role-badge">Loading...</span>
+        <button type="button" onclick="logoutUser()" class="btn-logout">
+            🚪 Logout
+        </button>
+    </div>
+</header>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-category">Main</div>
-            <a href="dashboard.html">📊 Dashboard</a>
-            <a href="add_product.html">➕ Add Product</a>
-            <a href="restock_product.html">📦 Restock Product</a>
-            <a href="index.html">🛒 Record Sale</a>
-            <a href="inventory.html">📦 Master Inventory</a>
+    <div class="sidebar-category">Main</div>
+    <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
 
-            <div class="sidebar-category">Reports</div>
-            <a href="view_sales.html">📄 View Sales</a>
-            <a href="debts.html" class="active">⏰ Outstanding Debts</a>
-            <a href="low_stock.html">⚠️ Low Stock</a>
-        </aside>
+    <a href="record_sale.html">🛒 Record Sale</a>
+    <a href="inventory.html">📦 Master Inventory</a>
+    <a href="add_product.html" class="admin-only">➕ Add Product</a>
+    <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
+
+    <div class="sidebar-category">Reports</div>
+    <a href="view_sales.html">📄 View Sales</a>
+    <a href="debts.html">⏰ Outstanding Debts</a>
+    <a href="low_stock.html">⚠️ Low Stock</a>
+    <a href="admin/users.html" class="admin-only">👥 User Management</a>
+    <a href="admin/reports.html" class="admin-only">📈 P&L Reports</a>
+</aside>
 
         <main class="main-content">
             <div class="header-title">
@@ -34,15 +41,15 @@
                 <p>Track partial payments, view remaining balances, and clear customer accounts.</p>
             </div>
 
-            <div class="content-container" style="max-width: 1000px;">
-                <div class="card" style="margin-bottom: 25px; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fcd34d;">
-                    <h3 style="color: #92400e; margin-bottom: 5px;">💰 Total Uncollected Shop Balance</h3>
-                    <div id="totalDebtSumDisplay" style="font-size: 2rem; font-weight: bold; color: #b45309;">0 Ksh</div>
+            <div class="content-container debt-container">
+                <div class="card debt-summary-card">
+                    <h3>💰 Total Uncollected Shop Balance</h3>
+                    <div id="totalDebtSumDisplay" class="debt-total-amount">0 Ksh</div>
                 </div>
 
-                <div class="card" style="overflow-x: auto;">
+                <div class="card table-card">
                     <h3>👥 Active Debtor Accounts</h3>
-                    <table style="min-width: 800px;">
+                    <table class="debts-table">
                         <thead>
                             <tr>
                                 <th>Customer Name</th>
@@ -51,146 +58,237 @@
                                 <th>Initial Debt</th>
                                 <th>Paid So Far</th>
                                 <th>Remaining Balance</th>
-                                <th>Log Payment</th>
+                                <th class="action-column">Log Payment</th>
                             </tr>
                         </thead>
                         <tbody id="debtsTableBody">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
         </main>
     </div>
 
-    <script>
-        const tableBody = document.getElementById('debtsTableBody');
-        const totalSumDisplay = document.getElementById('totalDebtSumDisplay');
+<script>
+    const DEBTS_API = "/api/debts.php";
+    const SALES_API = "/api/sales.php";
 
-        // Render data rows from localStorage journal
-        function renderDebtsLedger() {
-            let activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
-            let needsSave = false;
+    const tableBody = document.getElementById('debtsTableBody');
+    const totalSumDisplay = document.getElementById('totalDebtSumDisplay');
 
-            // Auto-upgrade older data formats to support partial payments
-            activeDebts = activeDebts.map(debt => {
-                if (debt.amountPaid === undefined || debt.initialDebt === undefined) {
-                    debt.initialDebt = debt.totalOwed;
-                    debt.amountPaid = 0;
-                    needsSave = true;
-                }
-                return debt;
-            });
-            
-            // Save if we just upgraded any old records
-            if (needsSave) {
-                localStorage.setItem('beauty_debts', JSON.stringify(activeDebts));
-            }
-            
-            tableBody.innerHTML = '';
-            let combinedSumTotal = 0;
+    let activeDebts = [];
 
-            if (activeDebts.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">🎉 Great news! No active customer debts on record.</td></tr>`;
-                totalSumDisplay.textContent = "0 Ksh";
-                return;
-            }
+    // Safe JSON response unwrapper
+    function extractArray(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.debts)) return data.debts;
+        if (data && Array.isArray(data.data)) return data.data;
+        return [];
+    }
 
-            activeDebts.forEach(debt => {
-                combinedSumTotal += debt.totalOwed;
+    // Fetch debts ledger from backend
+    async function fetchDebtsLedger() {
+        try {
+            const response = await fetch(DEBTS_API);
+            if (!response.ok) throw new Error("Failed to load debts from database.");
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight: 600; color: var(--text-dark);">${debt.customerName}</td>
-                    <td style="font-size: 0.9rem;">${debt.customerPhone}</td>
-                    <td><span style="font-size: 0.85rem; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${debt.productPurchased}</span></td>
-                    <td style="color: var(--text-muted);">${debt.initialDebt.toLocaleString()} Ksh</td>
-                    <td style="color: #10b981; font-weight: 500;">${debt.amountPaid.toLocaleString()} Ksh</td>
-                    <td style="color: #ef4444; font-weight: bold; font-size: 1.1rem;">${debt.totalOwed.toLocaleString()} Ksh</td>
-                    <td>
-                        <div style="display: flex; gap: 5px; align-items: center;">
-                            <input type="number" id="pay_input_${debt.id}" placeholder="Ksh" min="1" max="${debt.totalOwed}" class="form-control" style="width: 80px; padding: 5px; margin-bottom: 0;">
-                            <button class="btn btn-primary" onclick="processPartialPayment('${debt.id}')" style="padding: 6px 10px; font-size: 0.8rem;">
-                                Pay
-                            </button>
-                            <button class="btn btn-secondary" onclick="clearCustomerAccount('${debt.id}')" style="padding: 6px 10px; font-size: 0.8rem; background-color: #10b981; border-color: #10b981; color: white;" title="Clear Full Remaining Balance">
-                                ✅ All
-                            </button>
-                        </div>
+            const rawData = await response.json();
+            activeDebts = extractArray(rawData);
+            renderDebtsLedger();
+        } catch (err) {
+            console.error("Fetch Debts Error:", err);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="error-cell">
+                        ❌ Unable to connect to database server.
                     </td>
-                `;
-                tableBody.appendChild(tr);
-            });
+                </tr>`;
+        }
+    }
 
-            totalSumDisplay.textContent = combinedSumTotal.toLocaleString() + " Ksh";
+    // Render debtor accounts in table
+    function renderDebtsLedger() {
+        tableBody.innerHTML = '';
+        let combinedSumTotal = 0;
+
+        if (!activeDebts || activeDebts.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="7" class="empty-cell">🎉 Great news! No active customer debts on record.</td></tr>`;
+            totalSumDisplay.textContent = "0 Ksh";
+            return;
         }
 
-        // Logic for Partial Payments
-        window.processPartialPayment = function(debtId) {
-            let activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
-            const debtIndex = activeDebts.findIndex(d => d.id === debtId);
+        activeDebts.forEach(debt => {
+            const debtId = debt.id;
+            const customerName = debt.customer_name || debt.customerName || debt.name || 'Unknown Customer';
+            const customerPhone = debt.phone || debt.customer_phone || debt.customerPhone || 'N/A';
+            const productPurchased = debt.item_description || debt.product_purchased || debt.productPurchased || debt.description || 'General Sale';
             
-            if (debtIndex !== -1) {
-                const inputField = document.getElementById(`pay_input_${debtId}`);
-                const paymentAmount = parseFloat(inputField.value);
-                const debt = activeDebts[debtIndex];
-                
-                if (!paymentAmount || paymentAmount <= 0) {
-                    alert("⚠️ Please enter a valid payment amount.");
-                    return;
-                }
+            const totalOwed = parseFloat(debt.amount ?? debt.total_owed ?? debt.totalOwed ?? debt.balance ?? 0) || 0;
+            const amountPaid = parseFloat(debt.deposit ?? debt.amount_paid ?? debt.amountPaid ?? debt.paid ?? 0) || 0;
+            const initialDebt = parseFloat(debt.original_amount ?? debt.initial_debt ?? debt.initialDebt ?? (totalOwed + amountPaid)) || (totalOwed + amountPaid);
 
-                // LOG COLLECTION REVENUE: Record cash entry log parameters before adjusting balance states
-                const currentSales = JSON.parse(localStorage.getItem('beauty_sales')) || [];
-                currentSales.push({
-                    id: "s_" + Date.now(),
-                    description: `Debt Payment: ${debt.customerName}`,
+            combinedSumTotal += totalOwed;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="customer-name">${customerName}</td>
+                <td class="customer-phone">${customerPhone}</td>
+                <td><span class="product-tag">${productPurchased}</span></td>
+                <td class="text-muted">${initialDebt.toLocaleString()} Ksh</td>
+                <td class="text-success">${amountPaid.toLocaleString()} Ksh</td>
+                <td class="text-danger-bold">${totalOwed.toLocaleString()} Ksh</td>
+                <td>
+                    <div class="table-actions">
+                        <input type="number" id="pay_input_${debtId}" placeholder="Ksh" min="1" max="${totalOwed}" class="form-control pay-input">
+                        
+                        <select id="pay_method_${debtId}" class="form-control pay-method-select">
+                            <option value="cash">💵 Cash</option>
+                            <option value="mpesa">📱 M-Pesa</option>
+                        </select>
+
+                        <button class="btn btn-primary btn-pay" onclick="processPartialPayment('${debtId}')">
+                            Pay
+                        </button>
+                        <button class="btn btn-clear-all" onclick="clearCustomerAccount('${debtId}')" title="Clear Full Remaining Balance">
+                            ✅ All
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+        totalSumDisplay.textContent = combinedSumTotal.toLocaleString() + " Ksh";
+    }
+
+    // Process Partial Debt Payment
+    window.processPartialPayment = async function(debtId) {
+        const debt = activeDebts.find(d => String(d.id) === String(debtId));
+        if (!debt) return;
+
+        const inputField = document.getElementById(`pay_input_${debtId}`);
+        const methodSelect = document.getElementById(`pay_method_${debtId}`);
+        
+        const paymentAmount = parseFloat(inputField.value);
+        const paymentMethod = methodSelect ? methodSelect.value : 'cash';
+        
+        const totalOwed = parseFloat(debt.amount ?? debt.total_owed ?? debt.totalOwed ?? debt.balance ?? 0) || 0;
+        const customerName = debt.customer_name || debt.customerName || 'Customer';
+
+        if (!paymentAmount || paymentAmount <= 0) {
+            alert("⚠️ Please enter a valid payment amount.");
+            return;
+        }
+
+        if (paymentAmount > totalOwed) {
+            alert(`⚠️ Payment amount cannot exceed remaining debt (${totalOwed.toLocaleString()} Ksh).`);
+            return;
+        }
+
+        try {
+            // 1. Log Sales Revenue Record with explicit method
+            await fetch(SALES_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description: `Debt Payment (${paymentMethod.toUpperCase()}): ${customerName}`,
                     amount: paymentAmount,
-                    method: "debt-collection", // Explicit ledger assignment tag
-                    date: new Date().toLocaleDateString()
+                    method: paymentMethod,
+                    payment_mode: paymentMethod,
+                    payment_method: paymentMethod,
+                    sale_type: "debt-collection",
+                    date: new Date().toISOString()
+                })
+            });
+
+            // 2. Update Debt Balance in Database
+            const response = await fetch(DEBTS_API, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: debtId,
+                    debt_id: debtId,
+                    payment_amount: paymentAmount,
+                    amount_paid: paymentAmount,
+                    amount: totalOwed - paymentAmount,
+                    payment_mode: paymentMethod,
+                    method: paymentMethod
+                })
+            });
+
+            if (response.ok) {
+                alert(`✅ Payment Verified!\nRecorded ${paymentAmount.toLocaleString()} Ksh via ${paymentMethod.toUpperCase()} for ${customerName}.`);
+                await fetchDebtsLedger();
+            } else {
+                const result = await response.json().catch(() => ({}));
+                alert("❌ Failed to process debt payment: " + (result.error || "Server error"));
+            }
+        } catch (err) {
+            console.error("Payment Error:", err);
+            alert("❌ Network error processing payment.");
+        }
+    };
+
+    // Clear Customer Account Entirely
+    window.clearCustomerAccount = async function(debtId) {
+        const debt = activeDebts.find(d => String(d.id) === String(debtId));
+        if (!debt) return;
+
+        const methodSelect = document.getElementById(`pay_method_${debtId}`);
+        const paymentMethod = methodSelect ? methodSelect.value : 'cash';
+
+        const totalOwed = parseFloat(debt.amount ?? debt.total_owed ?? debt.totalOwed ?? debt.balance ?? 0) || 0;
+        const customerName = debt.customer_name || debt.customerName || 'Customer';
+
+        if (confirm(`Confirm Full Payment (${paymentMethod.toUpperCase()}): Has "${customerName}" cleared their entire remaining balance of ${totalOwed.toLocaleString()} Ksh?`)) {
+            try {
+                // 1. Log Sales Revenue Record with explicit method
+                await fetch(SALES_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        description: `Debt Cleared (${paymentMethod.toUpperCase()}): ${customerName}`,
+                        amount: totalOwed,
+                        method: paymentMethod,
+                        payment_mode: paymentMethod,
+                        payment_method: paymentMethod,
+                        sale_type: "debt-collection",
+                        date: new Date().toISOString()
+                    })
                 });
-                localStorage.setItem('beauty_sales', JSON.stringify(currentSales));
 
-                if (paymentAmount >= debt.totalOwed) {
-                    activeDebts.splice(debtIndex, 1);
+                // 2. Clear Debt in Database
+                const response = await fetch(DEBTS_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: debtId,
+                        debt_id: debtId,
+                        payment_amount: totalOwed,
+                        amount_paid: totalOwed,
+                        amount: 0,
+                        payment_mode: paymentMethod,
+                        method: paymentMethod
+                    })
+                });
+
+                if (response.ok) {
+                    alert(`✅ Account Cleared!\nFull payment of ${totalOwed.toLocaleString()} Ksh (${paymentMethod.toUpperCase()}) logged for ${customerName}.`);
+                    await fetchDebtsLedger();
                 } else {
-                    debt.amountPaid += paymentAmount;
-                    debt.totalOwed -= paymentAmount;
+                    const result = await response.json().catch(() => ({}));
+                    alert("❌ Failed to clear account: " + (result.error || "Server error"));
                 }
-                
-                localStorage.setItem('beauty_debts', JSON.stringify(activeDebts));
-                alert(`✅ Payment Verified!\nRecorded ${paymentAmount.toLocaleString()} Ksh collection for ${debt.customerName}.`);
-                renderDebtsLedger();
+            } catch (err) {
+                console.error("Clear Debt Error:", err);
+                alert("❌ Network error processing account clearance.");
             }
-        };
+        }
+    };
 
-        window.clearCustomerAccount = function(debtId) {
-            let activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
-            const debtIndex = activeDebts.findIndex(d => d.id === debtId);
-            
-            if (debtIndex !== -1) {
-                const debt = activeDebts[debtIndex];
-                if (confirm(`Confirm Full Payment: Has "${debt.customerName}" cleared their entire remaining balance of ${debt.totalOwed.toLocaleString()} Ksh?`)) {
-                    
-                    // LOG FULL REVENUE RECORD
-                    const currentSales = JSON.parse(localStorage.getItem('beauty_sales')) || [];
-                    currentSales.push({
-                        id: "s_" + Date.now(),
-                        description: `Debt Cleared: ${debt.customerName}`,
-                        amount: debt.totalOwed,
-                        method: "debt-collection", // Explicit ledger assignment tag
-                        date: new Date().toLocaleDateString()
-                    });
-                    localStorage.setItem('beauty_sales', JSON.stringify(currentSales));
-
-                    activeDebts.splice(debtIndex, 1);
-                    localStorage.setItem('beauty_debts', JSON.stringify(activeDebts));
-                    renderDebtsLedger();
-                }
-            }
-        };
-
-        // Initialize table
-        renderDebtsLedger();
-    </script>
+    // Initialize table on load
+    fetchDebtsLedger();
+</script>
+<script src="auth_ui.js"></script>
 </body>
 </html>

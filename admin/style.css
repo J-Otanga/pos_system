@@ -1,0 +1,173 @@
+/* ==========================================================================
+   ADMIN PORTAL OVERRIDES & SPECIFIC STYLES
+   ========================================================================== */
+
+:root {
+    --admin-accent: #4f46e5;       /* Indigo accent for Admin context */
+    --admin-dark-bg: #0f172a;      /* Darker topbar for admin differentiation */
+    --margin-high: #16a34a;        /* High profit margin green */
+    --margin-low: #dc2626;         /* Low profit margin red */
+}
+
+/* 1. Admin Topbar Styling */
+.topbar.admin-topbar {
+    background-color: var(--admin-dark-bg);
+    border-bottom: 2px solid var(--admin-accent);
+}
+
+.topbar .role-badge {
+    background-color: #312e81;
+    color: #e0e7ff;
+    border: 1px solid #6366f1;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+}
+
+/* 2. Inventory & Profit Margin Metrics */
+.margin-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.margin-good {
+    color: var(--margin-high);
+    background-color: #f0fdf4;
+}
+
+.margin-warn {
+    color: var(--margin-low);
+    background-color: #fef2f2;
+}
+
+/* 3. Catalog & User Table Action Buttons */
+.table-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.btn-mini {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s ease;
+}
+
+.btn-mini-edit {
+    background-color: #e0e7ff;
+    color: var(--admin-accent);
+}
+
+.btn-mini-edit:hover {
+    background-color: #c7d2fe;
+}
+
+.btn-mini-delete {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-mini-delete:hover {
+    background-color: #fca5a5;
+}
+
+/* 4. Permissions & User Management Grid */
+.user-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.user-status-active {
+    color: #15803d;
+    background-color: #dcfce7;
+}
+
+.user-status-inactive {
+    color: #4b5563;
+    background-color: #f3f4f6;
+}
+
+/* 5. System Settings & API Config Cards */
+.api-key-input {
+    font-family: monospace;
+    letter-spacing: 1px;
+    background-color: #f8fafc;
+}
+
+/* 6. Inventory Form Layouts & Live Profit Box */
+.form-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1.5fr 1.5fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.margin-preview-card {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.margin-preview-card label {
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+.margin-badge-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.margin-tag {
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: #e2e8f0;
+    color: #475569;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+/* Form Action Buttons */
+.card .actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Responsive Grid Adjustments */
+@media (max-width: 900px) {
+    .form-grid-4, 
+    .form-grid-3, 
+    .form-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Beauty Store POS</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: var(--admin-dark-bg, #0f172a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .login-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .login-header h2 {
+            margin: 0 0 8px 0;
+            color: #1e293b;
+            font-size: 1.5rem;
+        }
+
+        .login-header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .alert-message {
+            display: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .alert-danger {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background-color: #4f46e5;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-login:hover {
+            background-color: #4338ca;
+        }
+
+        .btn-login:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="login-header">
+            <h2>💄 Beauty Store POS</h2>
+            <p>Sign in to access your terminal or management panel</p>
+        </div>
+
+        <div id="login-alert" class="alert-message alert-danger"></div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="login-username">Username or Email</label>
+                <input 
+                    type="text" 
+                    id="login-username" 
+                    class="form-control" 
+                    placeholder="Enter username or email" 
+                    required 
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input 
+                    type="password" 
+                    id="login-password" 
+                    class="form-control" 
+                    placeholder="••••••••" 
+                    required 
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <button type="submit" id="btn-submit" class="btn-login">Sign In</button>
+        </form>
+        <div style="text-align: right; margin-top: 10px;">
+    <a href="forgot_password.html" style="color: #2563eb; text-decoration: none; font-size: 0.85rem;">
+        Forgot Password?
+    </a>
+</div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

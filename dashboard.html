@@ -5,46 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beauty Shop System - Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Small helper class for empty or healthy alert states */
-        .healthy-state {
-            color: #047857;
-            background-color: #ecfdf5;
-            padding: 10px;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .huge-number {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: var(--text-dark);
-            margin: 10px 0;
-        }
-    </style>
 </head>
 <body>
 
-    <header class="topbar">
-        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
-        <div>👤 Welcome, Helen</div>
-    </header>
-
+<header class="topbar">
+    <h1>Beauty Store POS</h1>
+    <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+        <span id="nav-user-badge" class="role-badge">Loading...</span>
+        <button type="button" onclick="logoutUser()" class="btn-logout">
+            🚪 Logout
+        </button>
+    </div>
+</header>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-category">Main</div>
-            <a href="dashboard.html" class="active">📊 Dashboard</a>
-            <a href="inventory.html">📦 Master Inventory</a>
-            <a href="add_product.html">➕ Add Product</a>
-            <a href="restock_product.html">🔄 Restock Product</a>
-            <a href="index.html">🛒 Record Sale</a>
+    <div class="sidebar-category">Main</div>
+    <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
 
-            <div class="sidebar-category">Reports</div>
-            <a href="view_sales.html">📄 View Sales</a>
-            <a href="debts.html">⏰ Outstanding Debts</a>
-            <a href="low_stock.html">⚠️ Low Stock</a>
-        </aside>
+    <a href="record_sale.html">🛒 Record Sale</a>
+    <a href="inventory.html">📦 Master Inventory</a>
+    <a href="add_product.html" class="admin-only">➕ Add Product</a>
+    <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
+
+    <div class="sidebar-category">Reports</div>
+    <a href="view_sales.html">📄 View Sales</a>
+    <a href="debts.html">⏰ Outstanding Debts</a>
+    <a href="low_stock.html">⚠️ Low Stock</a>
+    <a href="admin/users.html" class="admin-only">👥 User Management</a>
+    <a href="admin/reports.html" class="admin-only">📈 P&L Reports</a>
+</aside>
 
         <main class="main-content">
             <div class="header-title">
@@ -54,110 +43,190 @@
 
             <div class="dashboard-metrics-grid">
                 
-                <div class="card">
+                <!-- 1. TODAY'S REVENUE SUMMARY -->
+                <div class="card" id="summaryCard">
                     <h3>📅 Today's Real Summary</h3>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div class="summary-item">
                         <span>Cash Collected</span>
-                        <span style="color: #10b981; font-weight: bold;">0 Ksh</span>
+                        <span id="cashDisplay" class="text-cash">0 Ksh</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <div class="summary-item">
                         <span>M-Pesa Revenue</span>
-                        <span style="color: #3b82f6; font-weight: bold;">0 Ksh</span>
+                        <span id="mpesaDisplay" class="text-mpesa">0 Ksh</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-weight: bold; background: #f9fafb; padding: 12px; margin-top: 15px; border-radius: 4px;">
+                    <div class="summary-item till-total">
                         <span>Total Till Value</span>
-                        <span style="color: #3b82f6; font-size: 1.1rem;">0 Ksh</span>
+                        <span id="tillDisplay" class="text-till">0 Ksh</span>
                     </div>
                 </div>
 
-                <div class="card">
+                <!-- 2. OUTSTANDING DEBTS CARD -->
+                <div class="card" id="debtsCard">
                     <h3>👤 Outstanding Debts</h3>
-                    <div class="huge-number" id="debtCountDisplay">0</div>
-                    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 25px;">Customers currently owe the shop money.</p>
-                    <a href="debts.html" style="color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 500;">Manage Active Debts →</a>
+                    <div class="huge-number" id="debtCountDisplay">0 Ksh</div>
+                    <p id="debtSubtitle" class="text-muted">(0 active debtor accounts)</p>
+                    <a href="debts.html" class="link-primary">Manage Active Debts →</a>
                 </div>
 
-                <div class="card">
+                <!-- 3. LOW STOCK ALERTS WIDGET -->
+                <div class="card" id="lowStockCard">
                     <h3>⚠️ Low Stock Alerts</h3>
-                    <div id="lowStockContainer" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
-                        </div>
-                    <a href="low_stock.html" style="display: block; margin-top: auto; color: #3b82f6; text-decoration: none; font-size: 0.9rem; font-weight: 500;">Open Master Inventory →</a>
+                    <div id="lowStockContainer" class="low-stock-list">
+                        <div class="empty-state">Checking inventory levels...</div>
+                    </div>
+                    <a href="inventory.html" class="link-primary mt-auto">Open Master Inventory →</a>
                 </div>
 
             </div>
         </main>
     </div>
 
-    <script>
-function calculateDashboardMetrics() {
-    // 1. Calculate Active Debts count
-    const activeDebts = JSON.parse(localStorage.getItem('beauty_debts')) || [];
-    document.getElementById('debtCountDisplay').textContent = activeDebts.length;
+<script>
+    async function updateDashboard() {
+        try {
+            // Fetch live data from all backend endpoints
+            const [salesRes, debtsRes, productsRes] = await Promise.all([
+                fetch('/api/sales.php').catch(() => null),
+                fetch('/api/debts.php').catch(() => null),
+                fetch('/api/products.php').catch(() => null)
+            ]);
 
-    // 2. Calculate Low Stock Items list
-    const inventory = JSON.parse(localStorage.getItem('beauty_inventory')) || [];
-    const lowStockContainer = document.getElementById('lowStockContainer');
-    const lowStockItems = inventory.filter(product => product.stock <= product.alertLevel);
-    
-    lowStockContainer.innerHTML = '';
-    if (lowStockItems.length === 0) {
-        lowStockContainer.innerHTML = `<div class="healthy-state">✅ All stock levels healthy!</div>`;
-    } else {
-        lowStockItems.forEach(product => {
-            const itemRow = document.createElement('div');
-            itemRow.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #e5e7eb;";
-            itemRow.innerHTML = `
-                <span>${product.name} <small style="color: #6b7280;">(${product.brand})</small></span>
-                <span style="color: #ef4444; font-weight: bold; background-color: #fee2e2; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;">
-                    ${product.stock} left
-                </span>
-            `;
-            lowStockContainer.appendChild(itemRow);
-        });
+            const salesRaw = salesRes && salesRes.ok ? await salesRes.json() : [];
+            const debtsRaw = debtsRes && debtsRes.ok ? await debtsRes.json() : [];
+            const productsRaw = productsRes && productsRes.ok ? await productsRes.json() : [];
+
+            const getArray = (data) => {
+                if (Array.isArray(data)) return data;
+                if (data && Array.isArray(data.sales)) return data.sales;
+                if (data && Array.isArray(data.debts)) return data.debts;
+                if (data && Array.isArray(data.products)) return data.products;
+                if (data && Array.isArray(data.data)) return data.data;
+                return [];
+            };
+
+            const sales = getArray(salesRaw);
+            const debts = getArray(debtsRaw);
+            const products = getArray(productsRaw);
+
+            // -------------------------------------------------------------
+            // 1. OUTSTANDING DEBTS SUMMARY
+            // -------------------------------------------------------------
+            let totalUnpaidDebtSum = 0;
+            debts.forEach(d => {
+                totalUnpaidDebtSum += parseFloat(d.amount ?? d.total_owed ?? 0);
+            });
+
+            const debtCountEl = document.getElementById('debtCountDisplay');
+            const debtSubtitleEl = document.getElementById('debtSubtitle');
+            if (debtCountEl) {
+                debtCountEl.textContent = `${totalUnpaidDebtSum.toLocaleString()} Ksh`;
+            }
+            if (debtSubtitleEl) {
+                debtSubtitleEl.textContent = `(${debts.length} active debtor account${debts.length === 1 ? '' : 's'})`;
+            }
+
+            // -------------------------------------------------------------
+            // 2. TODAY'S REAL CASH & M-PESA REVENUE
+            // -------------------------------------------------------------
+            let cashToday = 0;
+            let mpesaToday = 0;
+
+            // Format current local date as YYYY-MM-DD
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayFormatted = `${year}-${month}-${day}`;
+
+            sales.forEach(s => {
+                const rawDate = s.created_at || s.date || s.sale_date || s.created_date || '';
+                const saleDateFormatted = String(rawDate).split('T')[0].split(' ')[0];
+                const isToday = !saleDateFormatted || saleDateFormatted === todayFormatted;
+
+                if (isToday) {
+                    const totalAmount = parseFloat(s.amount || s.price || s.total || 0) || 0;
+
+                    // Stringify full row object to catch 'mpesa' anywhere in row data or description
+                    const saleRecordString = JSON.stringify(s).toLowerCase();
+                    const isMpesa = saleRecordString.includes('mpesa') || saleRecordString.includes('m-pesa');
+
+                    const mainMethod = String(s.method || s.payment_method || '').toLowerCase();
+
+                    if (mainMethod === 'debt' || mainMethod === 'credit') {
+                        // Upfront deposit paid today on a credit purchase
+                        const depositPaid = parseFloat(s.deposit ?? s.paid_amount ?? s.amount_paid ?? 0) || 0;
+                        if (depositPaid > 0) {
+                            if (isMpesa) {
+                                mpesaToday += depositPaid;
+                            } else {
+                                cashToday += depositPaid;
+                            }
+                        }
+                    } else {
+                        // Regular sales and debt collections
+                        if (isMpesa) {
+                            mpesaToday += totalAmount;
+                        } else {
+                            cashToday += totalAmount;
+                        }
+                    }
+                }
+            });
+
+            const cashDisplayEl = document.getElementById('cashDisplay');
+            const mpesaDisplayEl = document.getElementById('mpesaDisplay');
+            const tillDisplayEl = document.getElementById('tillDisplay');
+
+            if (cashDisplayEl) cashDisplayEl.textContent = `${cashToday.toLocaleString()} Ksh`;
+            if (mpesaDisplayEl) mpesaDisplayEl.textContent = `${mpesaToday.toLocaleString()} Ksh`;
+            if (tillDisplayEl) tillDisplayEl.textContent = `${(cashToday + mpesaToday).toLocaleString()} Ksh`;
+
+            // -------------------------------------------------------------
+            // 3. LOW STOCK ALERTS
+            // -------------------------------------------------------------
+            const lowStockContainer = document.getElementById('lowStockContainer');
+            if (lowStockContainer) {
+                lowStockContainer.innerHTML = '';
+
+                if (!products || products.length === 0) {
+                    lowStockContainer.innerHTML = `
+                        <div class="empty-state">
+                            📦 No products in database.<br>
+                            <a href="add_product.html" class="link-primary">+ Add First Product →</a>
+                        </div>
+                    `;
+                } else {
+                    const lowStockItems = products.filter(p => {
+                        const qty = Number(p.stock ?? p.quantity ?? 0);
+                        const alertMin = Number(p.alert_level ?? p.alertLevel ?? 3);
+                        return qty <= alertMin;
+                    });
+
+                    if (lowStockItems.length === 0) {
+                        lowStockContainer.innerHTML = `<div class="healthy-state">✅ All stock levels healthy!</div>`;
+                    } else {
+                        lowStockItems.forEach(item => {
+                            const qty = Number(item.stock ?? item.quantity ?? 0);
+                            const brand = item.brand || item.category || '';
+                            const row = document.createElement('div');
+                            row.className = 'low-stock-item';
+                            row.innerHTML = `
+                                <span>${item.name} ${brand ? `<small class="text-muted">(${brand})</small>` : ''}</span>
+                                <span class="badge-danger">${qty} left</span>
+                            `;
+                            lowStockContainer.appendChild(row);
+                        });
+                    }
+                }
+            }
+
+        } catch (err) {
+            console.error("Dashboard update error:", err);
+        }
     }
 
-    // 3. DYNAMIC REVENUE CALCULATION ENGINE
-    const salesLedger = JSON.parse(localStorage.getItem('beauty_sales')) || [];
-    const todayString = new Date().toLocaleDateString();
-
-    let todayCashSum = 0;
-    let todayMpesaSum = 0;
-
-    // Filter and aggregate records matching exactly today's operational date string
-    salesLedger.forEach(sale => {
-        if (sale.date === todayString) {
-            // Catch cash, initial debt deposits, and later debt collections
-            if (sale.method === 'cash' || sale.method === 'debt-deposit' || sale.method === 'debt-collection') {
-                todayCashSum += sale.amount;
-            } else if (sale.method === 'mpesa') {
-                todayMpesaSum += sale.amount;
-            }
-        }
-    });
-
-    const totalCalculatedDayRevenue = todayCashSum + todayMpesaSum;
-
-    // Direct DOM injection replacement to wipe out hardcoded mock numbers
-    const summaryCard = document.querySelector('.dashboard-metrics-grid .card');
-    summaryCard.innerHTML = `
-        <h3>📅 Today's Real Summary</h3>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <span>Cash Collected</span>
-            <span style="color: #10b981; font-weight: bold;">${todayCashSum.toLocaleString()} Ksh</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <span>M-Pesa Revenue</span>
-            <span style="color: #3b82f6; font-weight: bold;">${todayMpesaSum.toLocaleString()} Ksh</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-weight: bold; background: #f9fafb; padding: 12px; margin-top: 15px; border-radius: 4px;">
-            <span>Total Till Value</span>
-            <span style="color: #3b82f6; font-size: 1.1rem;">${totalCalculatedDayRevenue.toLocaleString()} Ksh</span>
-        </div>
-    `;
-}
-
-// Execute calculation layout mapping on initiation paint cycles
-calculateDashboardMetrics();
-    </script>
+    updateDashboard();
+</script>
+<script src="auth_ui.js"></script>
 </body>
 </html>

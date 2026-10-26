@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beauty Shop System - Record Sale</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="topbar">
+        <h1>Beauty Store POS</h1>
+        <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+            <span id="nav-user-badge" class="role-badge">Loading...</span>
+            <button type="button" onclick="logoutUser()" class="btn-logout">
+                🚪 Logout
+            </button>
+        </div>
+    </header>
+    
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-category">Main</div>
+            <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
+            <a href="record_sale.html" class="active">🛒 Record Sale</a>
+            <a href="inventory.html">📦 Master Inventory</a>
+            <a href="add_product.html" class="admin-only">➕ Add Product</a>
+            <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
+
+            <div class="sidebar-category">Reports</div>
+            <a href="view_sales.html">📄 View Sales</a>
+            <a href="debts.html">⏰ Outstanding Debts</a>
+            <a href="low_stock.html">⚠️ Low Stock</a>
+            <a href="admin/users.html" class="admin-only">👥 User Management</a>
+            <a href="admin/reports.html" class="admin-only">📈 P&L Reports</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="header-title">
+                <h2>🛒 Record Sale</h2>
+                <p>Record a new sale and collect payment (Cash, M-Pesa, or Debt). Stock updates automatically.</p>
+            </div>
+
+            <div class="content-container">
+                
+                <section class="card">
+                    <h3>New Sale</h3>
+                    
+                    <div class="form-grid">
+                        <div>
+                            <div class="form-group">
+                                <label>Product</label>
+                                <select class="form-control" id="productSelect">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <input type="number" id="quantity" class="form-control" value="1" min="1">
+                                <div class="help-text">Current stock: <span id="currentStock">0</span></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Total Amount</label>
+                                <input type="text" id="totalAmount" class="form-control" value="0 Ksh" readonly style="background-color: #f3f4f6;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="form-group">
+                                <label>Payment Method</label>
+                                <div class="payment-methods">
+                                    <button class="btn-payment active" data-method="cash">Cash</button>
+                                    <button class="btn-payment" data-method="mpesa">M-Pesa</button>
+                                    <button class="btn-payment" data-method="debt">Debt</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Amount Paid</label>
+                                <input type="number" id="amountPaid" class="form-control" value="0" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Change (Cash/M-Pesa)</label>
+                                <input type="text" id="changeAmount" class="form-control" value="0 Ksh" readonly style="background-color: #f3f4f6;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Debt Details Box -->
+                    <div class="info-box" id="debtInfoBox" style="display: none; background-color: #fffbeb; border: 1px solid #fef3c7; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <strong style="color: #b45309; display: block; margin-bottom: 10px;">👤 Customer Debt Details</strong>
+                        <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                <label style="font-size: 0.8rem; color: #92400e;">Customer Name *</label>
+                                <input type="text" id="debtorName" class="form-control" placeholder="e.g., John Doe" style="border-color: #fcd34d;">
+                            </div>
+                            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                <label style="font-size: 0.8rem; color: #92400e;">Phone Number</label>
+                                <input type="text" id="debtorPhone" class="form-control" placeholder="e.g., 0712345678" style="border-color: #fcd34d;">
+                            </div>
+                        </div>
+
+                        <!-- Deposit Paid Via Section -->
+                        <div id="depositMethodGroup" style="border-top: 1px dashed #fcd34d; padding-top: 10px; margin-top: 10px;">
+                            <label style="font-size: 0.85rem; font-weight: 600; color: #92400e; display: block; margin-bottom: 6px;">
+                                Deposit Paid Via (For <span id="depositLabel">0 Ksh</span> paid today):
+                            </label>
+                            <div style="display: flex; gap: 20px;">
+                                <label style="font-size: 0.85rem; color: #78350f; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                    <input type="radio" name="depositMethod" value="cash" checked> 💵 Cash
+                                </label>
+                                <label style="font-size: 0.85rem; color: #78350f; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                    <input type="radio" name="depositMethod" value="mpesa"> 📱 M-Pesa
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                        <button class="btn btn-primary">Record Sale</button>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h3>🧾 Recent Sales</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sale ID</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th>Paid</th>
+                                <th>Method</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamically loaded -->
+                        </tbody>
+                    </table>
+                    <a href="view_sales.html" style="display: block; margin-top: 15px; color: var(--primary-blue); text-decoration: none; font-size: 0.9rem;">View all sales →</a>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+<script>
+    let productsList = [];
+    let activeMethod = 'cash';
+
+    // DOM Elements
+    const productSelect = document.getElementById('productSelect');
+    const quantityInput = document.getElementById('quantity');
+    const currentStockSpan = document.getElementById('currentStock');
+    const totalAmountInput = document.getElementById('totalAmount');
+    const amountPaidInput = document.getElementById('amountPaid');
+    const changeAmountInput = document.getElementById('changeAmount');
+    
+    // Debt & Deposit Elements
+    const debtInfoBox = document.getElementById('debtInfoBox');
+    const debtorNameInput = document.getElementById('debtorName');
+    const debtorPhoneInput = document.getElementById('debtorPhone');
+    const depositMethodGroup = document.getElementById('depositMethodGroup');
+    const depositLabel = document.getElementById('depositLabel');
+
+    const paymentBtns = document.querySelectorAll('.btn-payment');
+    const resetBtn = document.getElementById('resetBtn');
+    const recordSaleBtn = document.querySelector('.actions .btn-primary');
+    const recentSalesTbody = document.querySelector('section.card table tbody');
+
+    // Load live products
+    async function loadProducts() {
+        try {
+            const res = await fetch('/api/products.php');
+            if (!res.ok) throw new Error('Failed to load products');
+            
+            productsList = await res.json();
+            productSelect.innerHTML = '';
+
+            if (!Array.isArray(productsList) || productsList.length === 0) {
+                productSelect.innerHTML = '<option value="">No products available</option>';
+                currentStockSpan.textContent = '0';
+                totalAmountInput.value = '0 Ksh';
+                return;
+            }
+
+            productsList.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                const price = parseFloat(p.selling_price || p.price || 0);
+                opt.textContent = `${p.name} (${p.category || 'General'}) — ${price.toLocaleString()} Ksh`;
+                productSelect.appendChild(opt);
+            });
+
+            if (productsList[0]) {
+                const firstProdPrice = parseFloat(productsList[0].selling_price || productsList[0].price || 0);
+                amountPaidInput.value = firstProdPrice * parseInt(quantityInput.value || 1);
+            }
+            
+            updateCalculations();
+        } catch (err) {
+            console.error('Products load error:', err);
+            productSelect.innerHTML = '<option value="">Error loading products from server</option>';
+        }
+    }
+
+    function getSelectedProduct() {
+        const selectedId = productSelect.value;
+        return productsList.find(p => String(p.id) === String(selectedId));
+    }
+
+    // Recalculate amounts and update UI
+    function updateCalculations() {
+        const prod = getSelectedProduct();
+        if (!prod) return;
+
+        const stock = parseInt(prod.stock ?? prod.quantity ?? 0);
+        const price = parseFloat(prod.selling_price ?? prod.price ?? 0);
+        const qty = parseInt(quantityInput.value) || 1;
+
+        currentStockSpan.textContent = stock;
+        
+        const total = price * qty;
+        totalAmountInput.value = total.toLocaleString() + ' Ksh';
+
+        const paid = parseFloat(amountPaidInput.value) || 0;
+        const change = paid - total;
+        changeAmountInput.value = (change > 0 ? change : 0).toLocaleString() + ' Ksh';
+
+        // Show Debt Info Box if method is 'debt' OR if paid amount < total
+        const isDebtTransaction = activeMethod === 'debt' || (paid < total && paid >= 0);
+        debtInfoBox.style.display = isDebtTransaction ? 'block' : 'none';
+
+        // Show Deposit Paid Via section if a deposit was actually paid (> 0)
+        if (isDebtTransaction && paid > 0) {
+            depositMethodGroup.style.display = 'block';
+            depositLabel.textContent = paid.toLocaleString() + ' Ksh';
+        } else {
+            depositMethodGroup.style.display = 'none';
+        }
+    }
+
+    // Toggle Payment Method
+    paymentBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            paymentBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeMethod = btn.getAttribute('data-method');
+
+            const prod = getSelectedProduct();
+            if (prod) {
+                const price = parseFloat(prod.selling_price ?? prod.price ?? 0);
+                const qty = parseInt(quantityInput.value) || 1;
+                const total = price * qty;
+
+                if (activeMethod === 'cash' || activeMethod === 'mpesa') {
+                    amountPaidInput.value = total;
+                } else if (activeMethod === 'debt') {
+                    const currentPaid = parseFloat(amountPaidInput.value) || 0;
+                    // Reset to 0 if previously full amount to prompt deposit entry
+                    if (currentPaid >= total) {
+                        amountPaidInput.value = 0;
+                    }
+                }
+            }
+
+            updateCalculations();
+        });
+    });
+
+    productSelect.addEventListener('change', () => {
+        const prod = getSelectedProduct();
+        if (prod) {
+            const price = parseFloat(prod.selling_price ?? prod.price ?? 0);
+            const qty = parseInt(quantityInput.value) || 1;
+            amountPaidInput.value = activeMethod === 'debt' ? 0 : price * qty;
+        }
+        updateCalculations();
+    });
+
+    quantityInput.addEventListener('input', () => {
+        const prod = getSelectedProduct();
+        if (prod) {
+            const price = parseFloat(prod.selling_price ?? prod.price ?? 0);
+            const qty = parseInt(quantityInput.value) || 1;
+            if (activeMethod !== 'debt') {
+                amountPaidInput.value = price * qty;
+            }
+        }
+        updateCalculations();
+    });
+
+    amountPaidInput.addEventListener('input', updateCalculations);
+
+    // Save Sale Submission
+    recordSaleBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const prod = getSelectedProduct();
+        if (!prod) {
+            alert('Please select a valid product.');
+            return;
+        }
+
+        const qty = parseInt(quantityInput.value) || 0;
+        const stock = parseInt(prod.stock ?? prod.quantity ?? 0);
+
+        if (qty <= 0) {
+            alert('Please enter a valid quantity.');
+            return;
+        }
+
+        if (qty > stock) {
+            alert(`❌ Insufficient stock! Only ${stock} units remaining.`);
+            return;
+        }
+
+        const unitPrice = parseFloat(prod.selling_price ?? prod.price ?? 0);
+        const totalAmount = unitPrice * qty;
+        const amountPaid = parseFloat(amountPaidInput.value) || 0;
+        const debtAmount = totalAmount - amountPaid;
+
+        const selectedDepositMethod = document.querySelector('input[name="depositMethod"]:checked')?.value || 'cash';
+
+        // STRICT RESTRICTION: Block Debt sales if full amount (or more) is inserted
+        if (activeMethod === 'debt') {
+            if (amountPaid >= totalAmount) {
+                alert(`❌ Cannot record full payment as Debt!\n\nAmount paid (${amountPaid.toLocaleString()} Ksh) is equal to or greater than the Total Amount (${totalAmount.toLocaleString()} Ksh).\n\n• For full payments, select Cash or M-Pesa.\n• For debt sales, enter a partial deposit less than ${totalAmount.toLocaleString()} Ksh.`);
+                amountPaidInput.focus();
+                return;
+            }
+        } else {
+            // Block Cash/M-Pesa if partial payment is inserted
+            if (amountPaid < totalAmount) {
+                alert(`⚠️ Partial payment detected!\n\nAmount paid (${amountPaid.toLocaleString()} Ksh) is less than the Total Amount (${totalAmount.toLocaleString()} Ksh).\n\nPlease select 'Debt' as the payment method to record this sale.`);
+                return;
+            }
+        }
+
+        // Require debtor name for debt sales
+        if (debtAmount > 0 && !debtorNameInput.value.trim()) {
+            alert('⚠️ Please enter the Customer Name for credit/debt sales.');
+            debtorNameInput.focus();
+            return;
+        }
+
+        recordSaleBtn.disabled = true;
+        recordSaleBtn.textContent = "Processing...";
+
+        try {
+            // 1. Post Sale Record
+            // 1. Post Sale Record
+const salePayload = {
+    product_id: prod.id,
+    quantity: qty,
+    description: `${prod.name} (x${qty})`,
+    customer_name: (activeMethod === 'debt' || debtAmount > 0) ? debtorNameInput.value.trim() : null,
+    amount: totalAmount,
+    total_amount: totalAmount,
+    amount_paid: amountPaid,
+    method: activeMethod,
+    deposit_method: amountPaid > 0 ? selectedDepositMethod : null,
+    date: new Date().toISOString()
+};
+
+            const saleRes = await fetch('/api/sales.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(salePayload)
+            });
+
+            if (!saleRes.ok) {
+                const errData = await saleRes.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to record sale.');
+            }
+
+            // 2. Post Debt Record if balance remains unpaid
+            if (debtAmount > 0) {
+                const debtPayload = {
+                    customer_name: debtorNameInput.value.trim(),
+                    phone: debtorPhoneInput.value.trim() || 'N/A',
+                    item_description: `${prod.name} (x${qty})`,
+                    amount: debtAmount,
+                    original_amount: totalAmount,
+                    deposit: amountPaid,
+                    deposit_method: amountPaid > 0 ? selectedDepositMethod : null,
+                    date: new Date().toISOString().split('T')[0]
+                };
+
+                await fetch('/api/debts.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(debtPayload)
+                });
+            }
+
+            alert('🎉 Sale recorded successfully! Stock and ledgers updated.');
+            
+            // Reset Form
+            debtorNameInput.value = '';
+            debtorPhoneInput.value = '';
+            quantityInput.value = 1;
+
+            await loadProducts();
+            await loadRecentSales();
+
+        } catch (err) {
+            console.error('Checkout error:', err);
+            alert('❌ Error: ' + err.message);
+        } finally {
+            recordSaleBtn.disabled = false;
+            recordSaleBtn.textContent = "Record Sale";
+        }
+    });
+
+    // Populate Recent Sales Table
+    async function loadRecentSales() {
+        if (!recentSalesTbody) return;
+        try {
+            const res = await fetch('/api/sales.php');
+            if (!res.ok) return;
+            const sales = await res.json();
+
+            recentSalesTbody.innerHTML = '';
+            if (!Array.isArray(sales) || sales.length === 0) {
+                recentSalesTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No sales recorded yet.</td></tr>`;
+                return;
+            }
+
+            const recent = sales.slice(0, 5);
+            recent.forEach(s => {
+                const tr = document.createElement('tr');
+                const methodKey = (s.method || 'cash').toLowerCase();
+                const badgeClass = methodKey === 'cash' ? 'badge-cash' : (methodKey === 'mpesa' ? 'badge-mpesa' : 'badge-debt');
+                
+                const formattedDate = s.created_at || s.date ? 
+                    new Date(s.created_at || s.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent';
+
+                const totalVal = parseFloat(s.total_amount ?? s.amount ?? 0);
+                const paidVal = s.amount_paid !== undefined && s.amount_paid !== null ? parseFloat(s.amount_paid) : parseFloat(s.amount || 0);
+
+                tr.innerHTML = `
+                    <td>#${s.id}</td>
+                    <td>${s.description || s.product_name || 'Sale'}</td>
+                    <td>${s.quantity || 1}</td>
+                    <td>${totalVal.toLocaleString()} Ksh</td>
+                    <td>${paidVal.toLocaleString()} Ksh</td>
+                    <td><span class="badge ${badgeClass}">${methodKey.toUpperCase()}</span></td>
+                    <td>${formattedDate}</td>
+                `;
+                recentSalesTbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error('Sales log load error:', err);
+        }
+    }
+
+    resetBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        quantityInput.value = 1;
+        debtorNameInput.value = '';
+        debtorPhoneInput.value = '';
+        updateCalculations();
+    });
+
+    loadProducts();
+    loadRecentSales();
+</script>
+<script src="auth_ui.js"></script>
+</body>
+</html>

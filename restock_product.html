@@ -3,31 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beauty Shop System - Restock Product</title>
+    <title>Beauty Store POS - Restock Product</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header class="topbar">
-        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
-        <div>👤 Welcome, Helen</div>
-    </header>
-
+<header class="topbar">
+    <h1>Beauty Store POS</h1>
+    <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+        <span id="nav-user-badge" class="role-badge">Loading...</span>
+        <button type="button" onclick="logoutUser()" class="btn-logout">
+            🚪 Logout
+        </button>
+    </div>
+</header>
+    <!-- Topbar Navigation -->
+    <div class="app-container">
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-category">Main</div>
-            <a href="dashboard.html">📊 Dashboard</a>
-            <a href="add_product.html">➕ Add Product</a>
-            <a href="restock_product.html" class="active">📦 Restock Product</a>
-            <a href="index.html">🛒 Record Sale</a>
-            <a href="inventory.html">📦 Master Inventory</a>
+    <div class="sidebar-category">Main</div>
+    <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
 
-            <div class="sidebar-category">Reports</div>
-            <a href="view_sales.html">📄 View Sales</a>
-            <a href="debts.html">⏰ Outstanding Debts</a>
-            <a href="low_stock.html">⚠️ Low Stock</a>
-        </aside>
+    <a href="record_sale.html">🛒 Record Sale</a>
+    <a href="inventory.html">📦 Master Inventory</a>
+    <a href="add_product.html" class="admin-only">➕ Add Product</a>
+    <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
 
+    <div class="sidebar-category">Reports</div>
+    <a href="view_sales.html">📄 View Sales</a>
+    <a href="debts.html">⏰ Outstanding Debts</a>
+    <a href="low_stock.html">⚠️ Low Stock</a>
+    <a href="admin/users.html" class="admin-only">👥 User Management</a>
+    <a href="admin/reports.html" class="admin-only">📈 P&L Reports</a>
+</aside>
+        <!-- Main Content Area -->
         <main class="main-content">
             <div class="header-title">
                 <h2>📦 Restock Inventory</h2>
@@ -44,7 +52,8 @@
                                 <div class="form-group">
                                     <label for="existingProduct">Select Product</label>
                                     <select id="existingProduct" class="form-control" required>
-                                        </select>
+                                        <option value="" disabled selected>Loading product catalog...</option>
+                                    </select>
                                 </div>
 
                                 <div class="form-row" style="display: flex; gap: 15px;">
@@ -66,25 +75,25 @@
 
                             <div>
                                 <div class="form-group">
-                                    <label for="unitBuyingPrice">Unit Buying Price (Ksh)</label>
-                                    <input type="number" id="unitBuyingPrice" class="form-control" min="0" required>
+                                    <label for="unitBuyingPrice">Unit Buying Price (KSh)</label>
+                                    <input type="number" id="unitBuyingPrice" class="form-control" min="0" step="0.01" required>
                                 </div>
 
                                 <div class="form-group">
                                     <label>Total Restock Cost</label>
-                                    <input type="text" id="totalRestockCost" class="form-control" value="0 Ksh" readonly style="background-color: #f3f4f6;">
+                                    <input type="text" id="totalRestockCost" class="form-control" value="0 KSh" readonly style="background-color: #f3f4f6;">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="supplierDetails">Supplier / Notes (Optional)</label>
-                                    <input type="text" id="supplierDetails" class="form-control" placeholder="e.g., Supplier delivery batch">
+                                    <label for="supplierDetails">Supplier / Invoice Notes (Optional)</label>
+                                    <input type="text" id="supplierDetails" class="form-control" placeholder="e.g., L'Oreal Wholesale Batch #8492">
                                 </div>
                             </div>
                         </div>
 
                         <div class="actions" style="margin-top: 30px;">
                             <button type="button" class="btn btn-secondary" id="clearRestockBtn">Clear</button>
-                            <button type="submit" class="btn btn-primary">Update Inventory</button>
+                            <button type="submit" class="btn btn-primary" id="submitRestockBtn">Update Inventory</button>
                         </div>
                     </form>
                 </section>
@@ -92,99 +101,151 @@
         </main>
     </div>
 
-    <script>
-        // DOM Elements
-        const productSelect = document.getElementById('existingProduct');
-        const currentStockDisplay = document.getElementById('currentStockDisplay');
-        const quantityToAdd = document.getElementById('quantityToAdd');
-        const newTotalStock = document.getElementById('newTotalStock');
-        const unitBuyingPrice = document.getElementById('unitBuyingPrice');
-        const totalRestockCost = document.getElementById('totalRestockCost');
-        const form = document.getElementById('restockForm');
-        const clearBtn = document.getElementById('clearRestockBtn');
+<script>
+    const productSelect = document.getElementById('existingProduct');
+    const currentStockDisplay = document.getElementById('currentStockDisplay');
+    const quantityToAdd = document.getElementById('quantityToAdd');
+    const newTotalStock = document.getElementById('newTotalStock');
+    const unitBuyingPrice = document.getElementById('unitBuyingPrice');
+    const totalRestockCost = document.getElementById('totalRestockCost');
+    const supplierDetails = document.getElementById('supplierDetails');
+    const form = document.getElementById('restockForm');
+    const clearBtn = document.getElementById('clearRestockBtn');
+    const submitBtn = document.getElementById('submitRestockBtn');
 
-        let inventory = [];
+    let inventory = [];
 
-        // Load inventory array items from local storage database
-        function loadInventory() {
-            const stored = localStorage.getItem('beauty_inventory');
-            inventory = stored ? JSON.parse(stored) : [];
+    // Load session user info into top bar
+    const posUser = JSON.parse(localStorage.getItem('pos_user') || '{}');
+    if (posUser.full_name) {
+        document.getElementById('userNameDisplay').textContent = `👤 ${posUser.full_name}`;
+    }
+    if (posUser.role) {
+        document.getElementById('userBadge').textContent = `Role: ${posUser.role.toUpperCase()}`;
+    }
+
+    // Fetch live inventory items
+    async function loadInventory() {
+        try {
+            const response = await fetch('api/products.php');
+            if (!response.ok) throw new Error('Failed to load inventory from server.');
+
+            inventory = await response.json();
             
-            // Rebuild selection element contents dynamically
             productSelect.innerHTML = '<option value="" disabled selected>-- Choose a product --</option>';
+            if (!inventory || inventory.length === 0) {
+                productSelect.innerHTML = '<option value="" disabled selected>-- No products available in database --</option>';
+                return;
+            }
+
             inventory.forEach(product => {
                 const opt = document.createElement('option');
                 opt.value = product.id;
-                opt.textContent = `${product.brand} - ${product.name} (${product.category})`;
+                opt.textContent = `${product.brand ? product.brand + ' - ' : ''}${product.name} (${product.category || 'General'})`;
                 productSelect.appendChild(opt);
             });
+        } catch (error) {
+            console.error('Fetch Inventory Error:', error);
+            productSelect.innerHTML = '<option value="" disabled selected>❌ Error connecting to database</option>';
+        }
+    }
+
+    // Populate current stock and cost price on selection change
+    productSelect.addEventListener('change', () => {
+        const matchedProduct = inventory.find(p => String(p.id) === String(productSelect.value));
+        if (matchedProduct) {
+            currentStockDisplay.value = parseInt(matchedProduct.stock) || 0;
+            unitBuyingPrice.value = parseFloat(matchedProduct.buying_price) || 0;
+            quantityToAdd.value = '';
+            calculateTotals();
+        }
+    });
+
+    // Dynamic calculation function
+    function calculateTotals() {
+        const currentStock = parseInt(currentStockDisplay.value) || 0;
+        const addedQty = parseInt(quantityToAdd.value) || 0;
+        const unitPrice = parseFloat(unitBuyingPrice.value) || 0;
+
+        newTotalStock.value = currentStock + addedQty;
+        const computedCost = addedQty * unitPrice;
+        totalRestockCost.value = computedCost.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' KSh';
+    }
+
+    quantityToAdd.addEventListener('input', calculateTotals);
+    unitBuyingPrice.addEventListener('input', calculateTotals);
+
+    // Save updated stock directly to PostgreSQL database with audit logging
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const prodId = productSelect.value;
+        const matchedProduct = inventory.find(p => String(p.id) === String(prodId));
+
+        if (!matchedProduct) {
+            alert('Please select a valid product.');
+            return;
         }
 
-        // Dropdown selection change rule logic execution
-        productSelect.addEventListener('change', () => {
-            const matchedProduct = inventory.find(p => p.id === productSelect.value);
-            if (matchedProduct) {
-                currentStockDisplay.value = matchedProduct.stock;
-                unitBuyingPrice.value = matchedProduct.buyingPrice;
-                quantityToAdd.value = ''; // Reset entry on shift
-                calculateTotals();
-            }
-        });
+        const addedQty = parseInt(quantityToAdd.value) || 0;
+        const updatedBuyingPrice = parseFloat(unitBuyingPrice.value) || 0;
 
-        // Real-time automatic calculations function
-        function calculateTotals() {
-            const currentStock = parseInt(currentStockDisplay.value) || 0;
-            const addedQty = parseInt(quantityToAdd.value) || 0;
-            const unitPrice = parseFloat(unitBuyingPrice.value) || 0;
-
-            // Compute automatic mathematical answers
-            newTotalStock.value = currentStock + addedQty;
-            const computedCost = addedQty * unitPrice;
-            totalRestockCost.value = computedCost.toLocaleString() + ' Ksh';
+        if (addedQty <= 0) {
+            alert('Please enter a valid quantity arrived.');
+            return;
         }
 
-        quantityToAdd.addEventListener('input', calculateTotals);
-        unitBuyingPrice.addEventListener('input', calculateTotals);
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Processing...";
 
-        // Handle updates on active inventory records array matrix
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const prodId = productSelect.value;
-            const targetIndex = inventory.findIndex(p => p.id === prodId);
+        try {
+            const response = await fetch('api/restock.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    product_id: prodId,
+                    qty_added: addedQty,
+                    buying_price: updatedBuyingPrice,
+                    supplier_name: supplierDetails.value.trim(),
+                    notes: supplierDetails.value.trim()
+                })
+            });
 
-            if (targetIndex !== -1) {
-                const addedQty = parseInt(quantityToAdd.value) || 0;
-                const updatedCostPrice = parseFloat(unitBuyingPrice.value) || 0;
+            const result = await response.json();
 
-                // Adjust array state variables directly
-                inventory[targetIndex].stock += addedQty;
-                inventory[targetIndex].buyingPrice = updatedCostPrice;
-
-                // Commit back storage string transformations
-                localStorage.setItem('beauty_inventory', JSON.stringify(inventory));
-
-                alert(`📦 Inventory Saved!\nUpdated stock for: ${inventory[targetIndex].name}\nNew Stock Level: ${inventory[targetIndex].stock} units.`);
+            if (response.ok && result.status === 'success') {
+                const currentStock = parseInt(matchedProduct.stock) || 0;
+                alert(`📦 Inventory Restocked!\nUpdated stock for: ${matchedProduct.name}\nNew Stock Level: ${currentStock + addedQty} units.`);
                 
                 form.reset();
                 resetDisplays();
-                loadInventory();
+                await loadInventory();
+            } else {
+                alert('❌ Failed to restock product: ' + (result.message || 'Server error'));
             }
-        });
-
-        function resetDisplays() {
-            currentStockDisplay.value = "0";
-            newTotalStock.value = "0";
-            totalRestockCost.value = "0 Ksh";
+        } catch (error) {
+            console.error('Restock Error:', error);
+            alert('❌ Network error updating stock in database.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Update Inventory";
         }
+    });
 
-        clearBtn.addEventListener('click', () => {
-            form.reset();
-            resetDisplays();
-        });
+    function resetDisplays() {
+        currentStockDisplay.value = "0";
+        newTotalStock.value = "0";
+        totalRestockCost.value = "0 KSh";
+    }
 
-        // Run routine setup on execution stack entry loop
-        loadInventory();
-    </script>
+    clearBtn.addEventListener('click', () => {
+        form.reset();
+        resetDisplays();
+    });
+
+    // Initial setup on page load
+    loadInventory();
+</script>
+<script src="auth_ui.js"></script>
 </body>
 </html>

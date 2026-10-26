@@ -7,27 +7,31 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header class="topbar">
-        <h1>🛍️ BEAUTY SHOP SYSTEM</h1>
-        <div>👤 Welcome, Helen</div>
-    </header>
-
+<header class="topbar">
+    <h1>Beauty Store POS</h1>
+    <div class="user-profile" style="display: flex; align-items: center; gap: 12px;">
+        <span id="nav-user-badge" class="role-badge">Loading...</span>
+        <button type="button" onclick="logoutUser()" class="btn-logout">
+            🚪 Logout
+        </button>
+    </div>
+</header>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-category">Main</div>
-            <a href="dashboard.html">📊 Dashboard</a>
-            <a href="add_product.html" class="active">➕ Add Product</a>
-            <a href="restock_product.html">📦 Restock Product</a>
-            <a href="index.html">🛒 Record Sale</a>
-            <a href="inventory.html">📦 Master Inventory</a>
+    <div class="sidebar-category">Main</div>
+    <a href="record_sale.html">🛒 Record Sale</a>
+    <a href="inventory.html">📦 Master Inventory</a>
+    <a href="dashboard.html" class="admin-only">📊 Dashboard</a>
+    <a href="add_product.html" class="admin-only">➕ Add Product</a>
+    <a href="restock_product.html" class="admin-only">🔄 Restock Product</a>
 
-            <div class="sidebar-category">Reports</div>
-            <a href="view_sales.html">📄 View Sales</a>
-            <a href="debts.html">⏰ Outstanding Debts</a>
-            <a href="low_stock.html">⚠️ Low Stock</a>
-        </aside>
-
+    <div class="sidebar-category">Reports</div>
+    <a href="view_sales.html">📄 View Sales</a>
+    <a href="debts.html">⏰ Outstanding Debts</a>
+    <a href="low_stock.html">⚠️ Low Stock</a>
+    <a href="admin/users.html" class="admin-only">👥 User Management</a>
+    <a href="admin/reports.html" class="admin-only">📈 P&L Reports</a>
+</aside>
         <main class="main-content">
             <div class="header-title">
                 <h2>➕ Add New Product</h2>
@@ -107,78 +111,76 @@
         </main>
     </div>
 
-    <script>
-        const form = document.getElementById('addProductForm');
-        const clearBtn = document.getElementById('clearFormBtn');
-        const brandSelect = document.getElementById('prodBrand');
-        const customBrandGroup = document.getElementById('customBrandGroup');
-        const customBrandInput = document.getElementById('prodCustomBrand');
+<script>
+    const form = document.getElementById('addProductForm');
+    const clearBtn = document.getElementById('clearFormBtn');
+    const brandSelect = document.getElementById('prodBrand');
+    const customBrandGroup = document.getElementById('customBrandGroup');
+    const customBrandInput = document.getElementById('prodCustomBrand');
 
-        // Initial default items data database helper
-        const defaultProducts = [
-            { id: "p1", name: "Marini Naturals Shampoo", brand: "Other", category: "Hair Care", buyingPrice: 1500, sellingPrice: 2000, stock: 15, alertLevel: 5 },
-            { id: "p2", name: "Darling Braids", brand: "Other", category: "Extensions", buyingPrice: 600, sellingPrice: 850, stock: 15, alertLevel: 3 },
-            { id: "p3", name: "Nice & Lovely Lotion", brand: "Other", category: "Skin Care", buyingPrice: 900, sellingPrice: 1200, stock: 15, alertLevel: 3 }
-        ];
+    // Toggle custom brand input visibility
+    brandSelect.addEventListener('change', () => {
+        if (brandSelect.value === 'Other') {
+            customBrandGroup.style.display = 'block';
+            customBrandInput.required = true;
+        } else {
+            customBrandGroup.style.display = 'none';
+            customBrandInput.required = false;
+            customBrandInput.value = '';
+        }
+    });
 
-        // Ensure database exists on load
-        function getInventory() {
-            const stored = localStorage.getItem('beauty_inventory');
-            if (!stored) {
-                localStorage.setItem('beauty_inventory', JSON.stringify(defaultProducts));
-                return defaultProducts;
-            }
-            return JSON.parse(stored);
+    // Handle form submission to PHP / PostgreSQL backend API
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        let finalBrand = brandSelect.value;
+        if (finalBrand === 'Other') {
+            finalBrand = customBrandInput.value.trim();
         }
 
-        brandSelect.addEventListener('change', () => {
-            if (brandSelect.value === 'Other') {
-                customBrandGroup.style.display = 'flex';
-                customBrandInput.required = true;
-            } else {
+        // Map inputs to match the PHP API / PostgreSQL table columns
+        const newProduct = {
+            id: "p_" + Date.now(),
+            name: document.getElementById('prodName').value.trim(),
+            brand: finalBrand,
+            category: document.getElementById('prodCategory').value,
+            buying_price: parseFloat(document.getElementById('prodBuyingPrice').value) || 0,
+            selling_price: parseFloat(document.getElementById('prodSellingPrice').value) || 0,
+            stock: parseInt(document.getElementById('prodInitialStock').value) || 0,
+            alert_level: parseInt(document.getElementById('prodAlertLevel').value) || 3
+        };
+
+        try {
+            const response = await fetch('/api/products.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProduct)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(`🎉 Success! "${newProduct.name}" (${newProduct.brand}) saved to PostgreSQL database!`);
+                form.reset();
                 customBrandGroup.style.display = 'none';
                 customBrandInput.required = false;
-                customBrandInput.value = '';
+            } else {
+                alert('❌ Error: ' + (result.error || 'Failed to save product.'));
             }
-        });
+        } catch (error) {
+            console.error('API Error:', error);
+            alert('❌ Network error: Could not reach /api/products.php');
+        }
+    });
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            let finalBrand = brandSelect.value;
-            if (finalBrand === 'Other') finalBrand = customBrandInput.value;
-
-            const newProduct = {
-                id: "p_" + Date.now(), // Creates a unique ID string
-                name: document.getElementById('prodName').value,
-                brand: finalBrand,
-                category: document.getElementById('prodCategory').value,
-                buyingPrice: parseFloat(document.getElementById('prodBuyingPrice').value),
-                sellingPrice: parseFloat(document.getElementById('prodSellingPrice').value),
-                stock: parseInt(document.getElementById('prodInitialStock').value),
-                alertLevel: parseInt(document.getElementById('prodAlertLevel').value)
-            };
-
-            // Pull database array, append data, and resave back
-            const currentInventory = getInventory();
-            currentInventory.push(newProduct);
-            localStorage.setItem('beauty_inventory', JSON.stringify(currentInventory));
-
-            alert(`🎉 Success! ${newProduct.brand} - "${newProduct.name}" has been registered into system memory.`);
-            
-            form.reset();
-            customBrandGroup.style.display = 'none';
-            customBrandInput.required = false;
-        });
-
-        clearBtn.addEventListener('click', () => {
-            form.reset();
-            customBrandGroup.style.display = 'none';
-            customBrandInput.required = false;
-        });
-
-        // Instantiate database on script evaluation
-        getInventory();
-    </script>
+    // Form clear handler
+    clearBtn.addEventListener('click', () => {
+        form.reset();
+        customBrandGroup.style.display = 'none';
+        customBrandInput.required = false;
+    });
+</script>
+<script src="auth_ui.js"></script>
 </body>
 </html>
